@@ -40,10 +40,9 @@ https://github.com/NiRUNELEM/ai-courseware-voice-studio/raw/main/sample-project/
 
 | รายการตัวอย่าง | รูปแบบ / สเปก | ลิงก์เปิดดู / ดาวน์โหลด |
 |---|---|---|
-| **วิดีโอบรรยาย (Web H.264)** | `1920x1080`, `60 fps`, `H.264 + AAC`, `53.7s` (รองรับทุกเบราว์เซอร์) | [sample_hybrid_rvc_web.mp4](sample-project/examples/sample_hybrid_rvc_web.mp4) |
-| **วิดีโอบรรยาย (Master HEVC)** | `1920x1080`, `60 fps`, `HEVC + AAC`, `53.7s` (`3.9 MB`) | [sample_hybrid_rvc_1080p60.mp4](sample-project/examples/sample_hybrid_rvc_1080p60.mp4) |
-| **ไฟล์เสียงบรรยายตัวอย่าง (`MP3`)** | `48 kHz`, `320 kbps`, `-18.5 LUFS` (`2.1 MB`) | [sample_hybrid_rvc.mp3](sample-project/examples/sample_hybrid_rvc.mp3) |
-| **สคริปต์ คลังคำศัพท์ และไฟล์ตั้งค่า** | 3 สไลด์ + `sample_phonetic_vocab.json` + `job_sample.yaml` | [sample_script.json](sample-project/sample_script.json) · [sample_phonetic_vocab.json](sample-project/sample_phonetic_vocab.json) |
+| **วิดีโอบรรยาย (Web H.264)** | `1920x1080`, `60 fps`, `H.264 + AAC`, `53.7s` | [sample_hybrid_rvc_web.mp4](
+
+https://github.com/user-attachments/assets/bc78122e-2775-4485-a2a1-10df6acb81fa
 
 ---
 
