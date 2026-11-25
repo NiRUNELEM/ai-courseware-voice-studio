@@ -113,7 +113,7 @@ cd ..
 ### 3. การนำโมเดลเสียงของตนเองมาใช้งานและปรับจูนทุกส่วนผ่าน YAML
 
 1. คัดลอกไฟล์ [voice-studio/configs/custom_voice.example.yaml](voice-studio/configs/custom_voice.example.yaml)
-2. ปรับแต่งได้ครบทุกชั้นโดย **ไม่ต้องแก้โค้ด Python**:
+2. ปรับแต่งได้ครบทุกชั้น:
    - **Stage 1 TTS:** `tts_backend`, `tts_voice`, `fallback_voice`, `hf_model_repo`, `hf_speaker`, `hf_speed`, `text_mode`, `pacing_sec`
    - **Stage 2 RVC v2:** `local_pth`, `local_index`, `repo_id`, `pitch_shift`, `index_rate`, `volume_envelope`, `protect`, `f0_stabilizer` (`true`/`false`), `pre_gate_rms_ms`, `pre_gate_ramp_ms`, `rvc_fp32`
    - **Stage 3 Mastering:** `pre_rvc_conditioning`, `highpass_hz`, `lowpass_hz`, `eq_preset` (`anime_female` | `warm_male` | `neutral` | `off`) หรือ `eq_bands` แบบกำหนดเอง, `comp_threshold_db`, `comp_ratio`, `gate_ratio`, `gate_release_ms`, `limiter_db`
