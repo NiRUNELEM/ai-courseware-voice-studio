@@ -26,21 +26,11 @@ flowchart LR
 
 ตัวอย่างภาพสไลด์ ไฟล์เสียง และวิดีโอ `1080p 60fps` ที่สร้างจริงจาก [`sample-project/`](sample-project/README.md) ด้วย `voice-studio` บน Google Colab L4:
 
-### วิดีโอตัวอย่าง (`1080p 60fps` — คลิกเพื่อเล่น)
-
-https://github.com/NiRUNELEM/ai-courseware-voice-studio/raw/main/sample-project/examples/sample_hybrid_rvc_web.mp4
-
-> หากเบราว์เซอร์ไม่แสดงตัวเล่นอัตโนมัติ สามารถกดเปิดเล่นตรงในเบราว์เซอร์ได้ทันที:
-> - **เล่นวิดีโอในเบราว์เซอร์ (H.264 Web Player):** [เปิดเล่นวิดีโอ 1080p60 (`sample_hybrid_rvc_web.mp4`)](https://raw.githubusercontent.com/NiRUNELEM/ai-courseware-voice-studio/main/sample-project/examples/sample_hybrid_rvc_web.mp4)
-> - **เล่นเสียงบรรยายในเบราว์เซอร์ (MP3 320 kbps):** [เปิดฟังเสียงตัวอย่าง (`sample_hybrid_rvc.mp3`)](https://raw.githubusercontent.com/NiRUNELEM/ai-courseware-voice-studio/main/sample-project/examples/sample_hybrid_rvc.mp3)
-
 | สไลด์ตัวอย่างที่ 1 | สไลด์ตัวอย่างที่ 2 | สไลด์ตัวอย่างที่ 3 |
 |---|---|---|
 | ![Slide 01](sample-project/slides/slide_01.png) | ![Slide 02](sample-project/slides/slide_02.png) | ![Slide 03](sample-project/slides/slide_03.png) |
 
-| รายการตัวอย่าง | รูปแบบ / สเปก | ลิงก์เปิดดู / ดาวน์โหลด |
-|---|---|---|
-| **วิดีโอบรรยาย (Web H.264)** | `1920x1080`, `60 fps`, `H.264 + AAC`, `53.7s` | [sample_hybrid_rvc_web.mp4](
+### วิดีโอตัวอย่าง
 
 https://github.com/user-attachments/assets/bc78122e-2775-4485-a2a1-10df6acb81fa
 
