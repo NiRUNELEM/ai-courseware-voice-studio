@@ -22,9 +22,17 @@ flowchart LR
 
 ---
 
-## ตัวอย่างผลลัพธ์ (Sample Output Preview)
+## ตัวอย่างผลลัพธ์ (Sample Output Preview & Player)
 
 ตัวอย่างภาพสไลด์ ไฟล์เสียง และวิดีโอ `1080p 60fps` ที่สร้างจริงจาก [`sample-project/`](sample-project/README.md) ด้วย `voice-studio` บน Google Colab L4:
+
+### วิดีโอตัวอย่าง (`1080p 60fps` — คลิกเพื่อเล่น)
+
+https://github.com/NiRUNELEM/ai-courseware-voice-studio/raw/main/sample-project/examples/sample_hybrid_rvc_web.mp4
+
+> หากเบราว์เซอร์ไม่แสดงตัวเล่นอัตโนมัติ สามารถกดเปิดเล่นตรงในเบราว์เซอร์ได้ทันที:
+> - **เล่นวิดีโอในเบราว์เซอร์ (H.264 Web Player):** [เปิดเล่นวิดีโอ 1080p60 (`sample_hybrid_rvc_web.mp4`)](https://raw.githubusercontent.com/NiRUNELEM/ai-courseware-voice-studio/main/sample-project/examples/sample_hybrid_rvc_web.mp4)
+> - **เล่นเสียงบรรยายในเบราว์เซอร์ (MP3 320 kbps):** [เปิดฟังเสียงตัวอย่าง (`sample_hybrid_rvc.mp3`)](https://raw.githubusercontent.com/NiRUNELEM/ai-courseware-voice-studio/main/sample-project/examples/sample_hybrid_rvc.mp3)
 
 | สไลด์ตัวอย่างที่ 1 | สไลด์ตัวอย่างที่ 2 | สไลด์ตัวอย่างที่ 3 |
 |---|---|---|
@@ -32,9 +40,10 @@ flowchart LR
 
 | รายการตัวอย่าง | รูปแบบ / สเปก | ลิงก์เปิดดู / ดาวน์โหลด |
 |---|---|---|
-| **วิดีโอบรรยายตัวอย่าง (`1080p60`)** | `1920x1080`, `60 fps`, `HEVC + AAC`, `53.7s` (`3.9 MB`) | [sample_hybrid_rvc_1080p60.mp4](sample-project/examples/sample_hybrid_rvc_1080p60.mp4) |
+| **วิดีโอบรรยาย (Web H.264)** | `1920x1080`, `60 fps`, `H.264 + AAC`, `53.7s` (รองรับทุกเบราว์เซอร์) | [sample_hybrid_rvc_web.mp4](sample-project/examples/sample_hybrid_rvc_web.mp4) |
+| **วิดีโอบรรยาย (Master HEVC)** | `1920x1080`, `60 fps`, `HEVC + AAC`, `53.7s` (`3.9 MB`) | [sample_hybrid_rvc_1080p60.mp4](sample-project/examples/sample_hybrid_rvc_1080p60.mp4) |
 | **ไฟล์เสียงบรรยายตัวอย่าง (`MP3`)** | `48 kHz`, `320 kbps`, `-18.5 LUFS` (`2.1 MB`) | [sample_hybrid_rvc.mp3](sample-project/examples/sample_hybrid_rvc.mp3) |
-| **สคริปต์และไฟล์ตั้งค่างาน** | 3 สไลด์ + `job_sample.yaml` + Starter API (`bun test` ผ่าน) | [sample_script.json](sample-project/sample_script.json) · [job_sample.yaml](sample-project/job_sample.yaml) |
+| **สคริปต์ คลังคำศัพท์ และไฟล์ตั้งค่า** | 3 สไลด์ + `sample_phonetic_vocab.json` + `job_sample.yaml` | [sample_script.json](sample-project/sample_script.json) · [sample_phonetic_vocab.json](sample-project/sample_phonetic_vocab.json) |
 
 ---
 
