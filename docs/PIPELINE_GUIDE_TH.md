@@ -50,7 +50,7 @@
    - `protect` (แนะนำ `0.50`–`0.60`) ปกป้องพยัญชนะไม่ก้องและตัวสะกดภาษาไทย
    - `rvc_fp32: true` และ `intermediate_float: true` ประมวลผล 32-bit float ตลอดสายเพื่อลดพื้นเสียงรบกวน
 2. **นำคลิปเสียงอ้างอิงภาษาไทยแห้งใสมาโคลนแบบ Zero-Shot:** ระบุไฟล์เสียงอ้างอิงเพื่อเป็นเสียงตั้งต้นให้โมเดลพูดภาษาไทยตามจังหวะหายใจก่อนส่งต่อเข้าสู่ Broadcast Mastering
-3. **Broadcast Mastering (`Stage 3`):** กรองความถี่ต่ำกว่า `105 Hz`, ลดย่านก้องขุ่นมัว `280 Hz -2.2 dB`, เติมความใสชัด `2.4 kHz +2.5 dB`, ตัดเสียงเสียดลม `6 kHz -2.4 dB` / `7.6 kHz -2.0 dB`, Noise Gate, Normalize ความดังมาตรฐาน `-18.5 LUFS`, Peak Limiter `-1.5 dBFS` และส่งออก `48 kHz / 24-bit PCM` ผ่าน `libsoxr` ความแม่นยำ `33-bit`
+3. **Broadcast Mastering (`Stage 3`) ที่ปรับจูนได้ครบผ่าน YAML:** รองรับ `eq_preset` (`anime_female`, `warm_male`, `neutral`, `off`) หรือระบุ `eq_bands` เอง, `highpass_hz`, `lowpass_hz`, `comp_threshold_db`, `comp_ratio`, `gate_ratio`, `gate_release_ms`, `limiter_db` (ค่ามาตรฐาน `-1.8 dBFS`), `pre_rvc_conditioning`, และ `video_codec` (`auto`, `hevc`, `h264`, `libx264`, `libx265`) พร้อมส่งออก `48 kHz / 24-bit PCM` ผ่าน `libsoxr` ความแม่นยำ `33-bit` (ดูตัวอย่างใน `voice-studio/configs/custom_voice.example.yaml`)
 
 | พารามิเตอร์ | โปรไฟล์ไทยแท้ (Zero-Shot + RVC v2) | โปรไฟล์ผสมสองภาษา (Neural TTS + RVC v2) | บทบาทในการจูนเสียงที่นำมาใช้ |
 |---|---|---|---|

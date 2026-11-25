@@ -39,6 +39,8 @@ class Stage1Config:
     text_mode: str = "bilingual"
     clause_spacing: bool = True
     pacing_sec: float = 0.30
+    fallback_voice: str = "th-TH-NiwatNeural"
+    fallback_pitch: str = "+22Hz"
 
 
 @dataclass
@@ -92,6 +94,9 @@ class MasteringConfig:
     comp_ratio: float = 1.5
     limiter_db: float = -1.8
     pre_rvc_conditioning: bool = True
+    pre_rvc_highpass_hz: int = 85
+    pre_rvc_lowpass_hz: int = 11500
+    pre_rvc_denoise: bool = True
     inter_item_silence: float = 0.40
     mp3_bitrate: str = "192k"
 
@@ -146,6 +151,9 @@ class OutputConfig:
     aac_bitrate: str = "192k"
     nvenc_preset: str = "p4"
     nvenc_cq: int = 21
+    video_codec: str = "auto"
+    progress_bar: bool = True
+    transition_frames: int = 24
 
 
 @dataclass
@@ -189,6 +197,7 @@ class ColabBridgeConfig:
     cli_binary: str = ""
     disconnect_mismatched: bool = True
     connect_browser_mcp: bool = False
+    gpu_fallback_tiers: List[str] = field(default_factory=list)
 
 
 @dataclass

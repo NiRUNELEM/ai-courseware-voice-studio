@@ -183,18 +183,24 @@ def condition_stage1_pre_rvc_wav(
     target_lufs: float = -18.0,
     noise_gate_threshold: float = 0.008,
     bit_depth: int = 24,
+    highpass_hz: int = 85,
+    lowpass_hz: int = 11500,
+    denoise: bool = True,
 ) -> float:
-    """Conditions Stage 1 TTS audio BEFORE RVC: 24-bit SoXR-33 + highpass/lowpass + denoise + Noise Gate + clip-free LUFS."""
+    """Conditions Stage 1 TTS audio BEFORE RVC: 24-bit SoXR-33 + configurable highpass/lowpass/denoise + gate + LUFS."""
     thresh = max(0.0005, min(0.2, float(noise_gate_threshold)))
     gate_filter = f"agate=threshold={thresh}:range=0.0003:ratio=8.0:attack=6:release=110:knee=3.0:detection=rms"
-    pre_filters = [
-        "aresample=resampler=soxr:precision=33",
-        "highpass=f=85",
-        "lowpass=f=11500",
-        "afftdn=nf=-55:nr=5:nt=w",
+    pre_filters = ["aresample=resampler=soxr:precision=33"]
+    if int(highpass_hz) > 0:
+        pre_filters.append(f"highpass=f={int(highpass_hz)}")
+    if int(lowpass_hz) > 0:
+        pre_filters.append(f"lowpass=f={int(lowpass_hz)}")
+    if denoise:
+        pre_filters.append("afftdn=nf=-55:nr=5:nt=w")
+    pre_filters.extend([
         "acompressor=threshold=-16dB:ratio=1.5:attack=15:release=140:knee=6.0",
         gate_filter,
-    ]
+    ])
     post_filters = [
         "alimiter=limit=-3.5dB:attack=12:release=180:level=false",
     ]

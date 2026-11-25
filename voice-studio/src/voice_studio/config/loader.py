@@ -253,6 +253,9 @@ def load_pipeline_config(
         aac_bitrate=str(out_d.get("aac_bitrate") or "192k"),
         nvenc_preset=str(out_d.get("nvenc_preset") or "p4"),
         nvenc_cq=int(out_d.get("nvenc_cq") or 21),
+        video_codec=str(out_d.get("video_codec") or "auto"),
+        progress_bar=bool(out_d.get("progress_bar", True)),
+        transition_frames=max(1, int(out_d.get("transition_frames", 24))),
     )
 
     explicit_steps = merged.get("steps")

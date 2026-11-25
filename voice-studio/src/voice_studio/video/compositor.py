@@ -98,8 +98,10 @@ def prepare_stage_buffers(
     base_img: Image.Image,
     items: List[Dict[str, Any]],
     apply_progressive: bool,
+    transition_frames: int = TRANSITION_FRAMES,
 ) -> Dict[str, Any]:
     """Pre-renders masked stages and ease-out alpha dissolve byte chunks."""
+    t_frames = max(1, int(transition_frames))
     initial_stage = base_img.copy()
     stage_images: List[Image.Image] = []
     if not apply_progressive:
@@ -111,6 +113,7 @@ def prepare_stage_buffers(
             "initial_top_bytes": base_top,
             "stage_top_bytes": [],
             "transitions": {},
+            "transition_frames": t_frames,
         }
 
     items.sort(key=lambda x: (x["start_sec"], x.get("level", 0)))
@@ -138,8 +141,8 @@ def prepare_stage_buffers(
         if idx > 0 or it["start_sec"] > 0.05:
             prior = stage_images[idx - 1] if idx > 0 else initial_stage
             chunks: List[bytes] = []
-            for rel_f in range(TRANSITION_FRAMES):
-                p = rel_f / float(TRANSITION_FRAMES)
+            for rel_f in range(t_frames):
+                p = rel_f / float(t_frames)
                 alpha = 1.0 - (1.0 - p) ** 2
                 blended = Image.blend(it["blank_crop"], it["full_crop"], alpha)
                 f_img = prior.copy()
@@ -154,23 +157,35 @@ def prepare_stage_buffers(
         "initial_top_bytes": initial_top_bytes,
         "stage_top_bytes": stage_top_bytes,
         "transitions": transitions,
+        "transition_frames": t_frames,
     }
 
 
-@functools.lru_cache(maxsize=1)
-def detect_best_video_encoder() -> Dict[str, Any]:
-    """Probes FFmpeg/GPU support to pick HEVC NVENC or multi-threaded CPU fallback."""
+@functools.lru_cache(maxsize=8)
+def detect_best_video_encoder(preferred_codec: str = "auto") -> Dict[str, Any]:
+    """Probes FFmpeg/GPU support to pick preferred codec (auto/hevc/h264/libx264/libx265) with fallback."""
     cpu_count = os.cpu_count() or 4
     ffmpeg_bin = shutil.which("ffmpeg")
     if not ffmpeg_bin:
         return {"codec": "none", "hardware": False, "workers": max(1, min(4, cpu_count)), "threads_per_worker": 2}
 
-    candidates = [
+    all_candidates = [
         ("hevc_nvenc", True, ["-c:v", "hevc_nvenc", "-preset", "p4", "-tune", "hq", "-rc", "vbr", "-cq", "21", "-b:v", "5M", "-maxrate", "10M", "-spatial-aq", "1", "-pix_fmt", "yuv420p"]),
         ("h264_nvenc", True, ["-c:v", "h264_nvenc", "-preset", "p4", "-tune", "hq", "-rc", "vbr", "-cq", "21", "-b:v", "6M", "-maxrate", "12M", "-pix_fmt", "yuv420p"]),
         ("libx264", False, ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "20", "-pix_fmt", "yuv420p"]),
         ("libx265", False, ["-c:v", "libx265", "-preset", "fast", "-crf", "22", "-pix_fmt", "yuv420p"]),
     ]
+    pref = (preferred_codec or "auto").strip().lower()
+    if pref in ("h264", "avc", "web"):
+        order = ("h264_nvenc", "libx264", "hevc_nvenc", "libx265")
+    elif pref in ("hevc", "h265"):
+        order = ("hevc_nvenc", "libx265", "h264_nvenc", "libx264")
+    elif pref in ("hevc_nvenc", "h264_nvenc", "libx264", "libx265"):
+        order = (pref, *(c[0] for c in all_candidates if c[0] != pref))
+    else:
+        order = ("hevc_nvenc", "h264_nvenc", "libx264", "libx265")
+    cand_map = {c[0]: c for c in all_candidates}
+    candidates = [cand_map[name] for name in order if name in cand_map]
     with tempfile.NamedTemporaryFile(suffix=".mp4") as probe_out:
         for codec, is_hw, codec_args in candidates:
             probe_cmd = [
@@ -222,8 +237,9 @@ def encode_slide_segment(
     aac_bitrate: str = "192k",
     nvenc_preset: str = "p4",
     nvenc_cq: int = 21,
+    progress_bar: bool = True,
 ) -> None:
-    """Streams raw RGB frames with a 4px progress bar into ffmpeg."""
+    """Streams raw RGB frames with an optional 4px progress bar into ffmpeg."""
     enc = encoder_cfg or detect_best_video_encoder()
     is_hw = bool(enc.get("hardware", False))
     # Cap raw RGB pipe input to 20fps (divides 60fps evenly by 3x) to avoid ~950GB Python pipe bottleneck
@@ -248,10 +264,11 @@ def encode_slide_segment(
     with open(log_path, "w", encoding="utf-8") as ffmpeg_log:
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=ffmpeg_log, bufsize=8 * 1024 * 1024)
         transitions = buffers["transitions"]
+        t_frames = int(buffers.get("transition_frames", TRANSITION_FRAMES))
         stage_top_bytes = buffers["stage_top_bytes"]
         assert proc.stdin is not None
         last_pw = -1
-        cached_bar = b""
+        cached_bar = (SLATE_RGB * SLIDE_W) * BAR_H
         try:
             for f_idx in range(pipe_frames):
                 t = f_idx / float(pipe_fps)
@@ -268,14 +285,15 @@ def encode_slide_segment(
                         top_bytes = buffers["initial_top_bytes"]
                     else:
                         trans_idx = int((t - items[active_idx]["start_sec"]) * fps)
-                        if 0 <= trans_idx < TRANSITION_FRAMES and active_idx in transitions:
+                        if 0 <= trans_idx < t_frames and active_idx in transitions:
                             top_bytes = transitions[active_idx][trans_idx]
                         else:
                             top_bytes = stage_top_bytes[active_idx]
-                p_w = min(SLIDE_W, max(0, int(SLIDE_W * (f_idx + 1) / float(pipe_frames))))
-                if p_w != last_pw:
-                    cached_bar = (CYAN_RGB * p_w + SLATE_RGB * (SLIDE_W - p_w)) * BAR_H
-                    last_pw = p_w
+                if progress_bar:
+                    p_w = min(SLIDE_W, max(0, int(SLIDE_W * (f_idx + 1) / float(pipe_frames))))
+                    if p_w != last_pw:
+                        cached_bar = (CYAN_RGB * p_w + SLATE_RGB * (SLIDE_W - p_w)) * BAR_H
+                        last_pw = p_w
                 proc.stdin.write(top_bytes)
                 proc.stdin.write(cached_bar)
         except BrokenPipeError as exc:

@@ -90,10 +90,12 @@ class TestToolIntegrityAndInputSystem(unittest.TestCase):
             self.assertEqual(Image.open(png_out).size, (1920, 1080))
 
     def test_03_colab_bundle_zip_and_essential_models_verified(self) -> None:
-        model_rep = verify_local_models(ROOT, verify_checksums=False)
-        self.assertTrue(model_rep["passed"], f"Incomplete models/: {model_rep}")
-        model_ids = {e["id"] for e in model_rep["entries"]}
-        self.assertEqual(model_ids, {"gawr_gura_pth", "gawr_gura_index", "gawr_gura_metadata", "applio_contentvec", "applio_rmvpe"})
+        has_local_manifest = (ROOT / "models" / "manifest.json").is_file()
+        if has_local_manifest:
+            model_rep = verify_local_models(ROOT, verify_checksums=False)
+            self.assertTrue(model_rep["passed"], f"Incomplete models/: {model_rep}")
+            model_ids = {e["id"] for e in model_rep["entries"]}
+            self.assertEqual(model_ids, {"gawr_gura_pth", "gawr_gura_index", "gawr_gura_metadata", "applio_contentvec", "applio_rmvpe"})
 
         self.assertEqual(cli_main(["bundle"]), 0)
         zip_path = ROOT / "exports/voice_studio_colab_bundle.zip"
@@ -101,18 +103,20 @@ class TestToolIntegrityAndInputSystem(unittest.TestCase):
         with zipfile.ZipFile(zip_path, "r") as zf:
             self.assertIsNone(zf.testzip())
             names = set(zf.namelist())
-            for req in (
+            required = [
                 "studio.py",
                 "README.md",
                 "requirements.txt",
                 "configs/studio.yaml",
                 "configs/colab_pro.yaml",
-                "models/manifest.json",
                 "colab/voice_studio_colab.ipynb",
                 "input/sample_neutral.json",
                 "input/templates/subtitles_template.srt",
                 "THIRD_PARTY_LICENSES.md",
-            ):
+            ]
+            if has_local_manifest:
+                required.append("models/manifest.json")
+            for req in required:
                 self.assertIn(req, names, f"Bundle missing {req}")
             for member in zf.namelist():
                 disk_path = ROOT / member

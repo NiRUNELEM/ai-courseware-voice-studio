@@ -1,14 +1,11 @@
-# Example Custom Job & Voice Model Tuning Configuration
-# Copy this file to my_job.yaml and point `voice.rvc.local_pth` / `local_index`
-# (or HuggingFace `repo_id`) to any RVC v2 voice model you add under `models/rvc/<name>/`,
-# then run:
+# Complete Custom Job, Voice Model, DSP Mastering, Video & Colab Configuration
+# Copy this file to my_job.yaml, customize any section below without editing Python code, and run:
 #   python studio.py run --config my_job.yaml
 #
 # Notes on Stage 1 TTS backends:
 #   - `omnivoice_thai` (hotdogs/omnivoice-thai + Vocos 24kHz dry polish, offline HuggingFace)
 #   - `edge_tts` (Microsoft Edge neural TTS e.g. th-TH-PremwadeeNeural or th-TH-NiwatNeural)
-#   - Standalone custom zero-shot reference cloning (`--ref-audio path/to/custom_ref.wav`)
-#     is also available directly via `tools/omnivoice_thai_studio/`.
+#   - `hf_kokoro_thai` (kunato/wayu-kokoro-thai-v1 ONNX bilingual)
 
 job:
   id: "my_custom_voice_job"
@@ -17,6 +14,7 @@ job:
 input:
   path: "input/sample_neutral.json"
   title: "My Custom RVC Production"
+  # extra_vocab_path: "my_phonetic_vocab.json" # Optional domain-specific Thai pronunciation map
 
 voice:
   profile: "custom_rvc"
@@ -24,11 +22,16 @@ voice:
   license: "custom-non-commercial"
   tts_backend: "omnivoice_thai"            # omnivoice_thai | edge_tts | hf_kokoro_thai
   hf_model_repo: "hotdogs/omnivoice-thai"  # Used by omnivoice_thai / hf_kokoro_thai
+  hf_speaker: "f_mid_warm"                 # Used by hf_kokoro_thai
+  hf_speed: 0.96                           # Used by hf_kokoro_thai
   tts_voice: "th-TH-PremwadeeNeural"       # Used when tts_backend is edge_tts
   tts_rate: "-4%"
   tts_pitch: "+0Hz"
+  fallback_voice: "th-TH-NiwatNeural"      # Edge-TTS auto-fallback voice (set "" to disable)
+  fallback_pitch: "+22Hz"
   text_mode: "phonetic_spaced"             # phonetic_spaced | bilingual | raw
   clause_spacing: true
+  pacing_sec: 0.30
   rvc:
     enabled: true
     source_type: "local"                   # Use "huggingface" + repo_id to auto-download from HF
@@ -39,10 +42,10 @@ voice:
     pitch_shift: 0                         # Adjust semitones to match Stage 1 vs custom RVC timbre
     f0_method: "rmvpe"                     # Recommended neural F0 tracker for Thai tones
     index_rate: 0.08                       # 0.05-0.12 keeps Thai vowels smooth without raspiness
-    volume_envelope: 0.75                  # 0.75 prevents RMS pumping/warble on Thai syllables
-    protect: 0.58                          # 0.50-0.60 preserves unvoiced Thai/English consonants
+    volume_envelope: 0.75                  # 0.75-0.80 prevents RMS pumping/warble on Thai syllables
+    protect: 0.45                          # 0.40-0.55 balances vocal identity vs unvoiced consonants
     hop_length: 128
-    input_gate_threshold: 0.004            # Gentle pre-RVC gate prevents chattering on soft endings
+    input_gate_threshold: 0.002            # Gentle pre-RVC gate prevents chattering on soft endings
     f0_stabilizer: true                    # Smooths RMVPE micro-tremolo (set false for singing/vibrato)
     pre_gate_rms_ms: 25.0                  # Pre-RVC RMS envelope window (ms)
     pre_gate_ramp_ms: 35.0                 # Pre-RVC Hanning fade ramp (ms)
@@ -50,11 +53,15 @@ voice:
     intermediate_float: true
 
 output:
-  formats: ["wav", "mp3"]                  # Audio-only example (add "mp4" to render 1080p60 video too)
+  formats: ["wav", "mp3", "mp4"]           # Remove "mp4" for audio-only production
   sample_rate: 48000
   bit_depth: 24
   resampler_precision: 33
   target_lufs: -18.5
+  pre_rvc_conditioning: true               # Set false to feed dry Stage 1 audio straight to RVC
+  pre_rvc_highpass_hz: 85                  # Pre-RVC highpass cutoff (Hz, 0 to disable)
+  pre_rvc_lowpass_hz: 11500                # Pre-RVC lowpass cutoff (Hz, 0 to disable)
+  pre_rvc_denoise: true                    # Pre-RVC gentle afftdn denoiser
   highpass_hz: 105                         # Lower to 75-85 for male/bass voices, or 0 to disable
   lowpass_hz: 0                            # 0 = auto (17500 Hz @ 48kHz, 15500 Hz otherwise)
   eq_preset: "anime_female"                # anime_female | warm_male | neutral | off
@@ -64,8 +71,19 @@ output:
   comp_threshold_db: -16.0                 # Gentle broadcast compressor threshold (dB)
   comp_ratio: 1.5                          # Set <= 1.0 to disable compressor
   denoise: true
+  declick: false                           # Keep false for soft female/anime voices
   noise_gate: true
   noise_gate_threshold: 0.0025
   gate_ratio: 8.0                          # Gentle expansion ratio (avoid >12 to prevent abrupt chop)
   gate_release_ms: 110.0                   # Release time (ms) for natural Thai word endings
   limiter_db: -1.8                         # True-peak ceiling & headroom guard (dBFS)
+  fps: 60
+  video_codec: "auto"                      # auto | hevc | h264 | hevc_nvenc | h264_nvenc | libx264 | libx265
+  nvenc_preset: "p7"
+  nvenc_cq: 19
+  progress_bar: true                       # Show 4px bottom progress bar in rendered MP4
+  transition_frames: 24                    # Ease-out dissolve frames for progressive slide reveals
+
+colab:
+  session_name: "voice-studio-pro"
+  gpu_fallback_tiers: ["T4", "A100"]       # Auto-fallback order on Colab 503 (set ["none"] to disable)

@@ -343,7 +343,13 @@ class ColabCliBridge:
             print(f"[colab-cli] Provisioning fresh runtime: {' '.join(cmd)}")
             from voice_studio.colab.chunk_io import provision_colab_session
 
-            reused = provision_colab_session(self, cmd, desired_hw, bool(self.cfg.runtime.high_ram))
+            reused = provision_colab_session(
+                self,
+                cmd,
+                desired_hw,
+                bool(self.cfg.runtime.high_ram),
+                fallback_tiers=list(self.cfg.colab.gpu_fallback_tiers) or None,
+            )
 
         url_proc = self._run_cli(["url", "-s", self.session_name], timeout=20.0)
         attach_url = url_proc.stdout.strip() if url_proc.returncode == 0 else ""

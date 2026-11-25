@@ -110,16 +110,37 @@ cd ..
   --config job_sample.yaml --voice gawr_gura_hybrid --target colab_cli
 ```
 
-### 3. การนำโมเดลเสียงของตนเองมาใช้งาน
+### 3. การนำโมเดลเสียงของตนเองมาใช้งานและปรับจูนทุกส่วนผ่าน YAML
 
 1. คัดลอกไฟล์ [voice-studio/configs/custom_voice.example.yaml](voice-studio/configs/custom_voice.example.yaml)
-2. ระบุไฟล์โมเดล RVC v2 (`.pth` และ `.index`) หรือคลิปเสียงพูดภาษาไทยความยาว `5–10` วินาทีสำหรับโคลนเสียงแบบ Zero-Shot
-3. ดูรายละเอียดการตั้งค่าเพิ่มเติมใน [docs/PIPELINE_GUIDE_TH.md](docs/PIPELINE_GUIDE_TH.md)
+2. ปรับแต่งได้ครบทุกชั้นโดย **ไม่ต้องแก้โค้ด Python**:
+   - **Stage 1 TTS:** `tts_backend`, `tts_voice`, `fallback_voice`, `hf_model_repo`, `hf_speaker`, `hf_speed`, `text_mode`, `pacing_sec`
+   - **Stage 2 RVC v2:** `local_pth`, `local_index`, `repo_id`, `pitch_shift`, `index_rate`, `volume_envelope`, `protect`, `f0_stabilizer` (`true`/`false`), `pre_gate_rms_ms`, `pre_gate_ramp_ms`, `rvc_fp32`
+   - **Stage 3 Mastering:** `pre_rvc_conditioning`, `highpass_hz`, `lowpass_hz`, `eq_preset` (`anime_female` | `warm_male` | `neutral` | `off`) หรือ `eq_bands` แบบกำหนดเอง, `comp_threshold_db`, `comp_ratio`, `gate_ratio`, `gate_release_ms`, `limiter_db`
+   - **Video & Colab:** `video_codec` (`auto` | `hevc` | `h264` | `libx264` | `libx265`), `fps`, `nvenc_preset`, `nvenc_cq`, `progress_bar`, `transition_frames`, `colab.gpu_fallback_tiers`
+3. ดูรายละเอียดเพิ่มเติมใน [docs/PIPELINE_GUIDE_TH.md](docs/PIPELINE_GUIDE_TH.md) และ [voice-studio/README.md](voice-studio/README.md)
 
-### 4. การใช้งาน AI Skills และ MCP Server
+### 4. การใช้งาน Python SDK
+
+```python
+from voice_studio import VoiceStudio
+
+studio = VoiceStudio("voice-studio/configs/studio.yaml")
+print(studio.voices())  # แสดงโปรไฟล์เสียงและ eq_presets ทั้งหมด
+
+res = studio.run(
+    input_path="sample-project/sample_script.json",
+    job_id="custom_sdk_run",
+    voice="direct_tts",
+    target="local",
+    output_overrides={"eq_preset": "neutral", "highpass_hz": 85, "video_codec": "h264"},
+)
+```
+
+### 5. การใช้งาน AI Skills และ MCP Server (16 Tools)
 
 - **AI Skills:** เปิด Repository นี้ใน AI Coding Agent ที่รองรับ `.agents/skills/` เพื่อโหลด Skill ทั้ง 2 ชุดใน [`skills/`](skills/README.md) (รองรับการค้นหาโมเดลเสียงจาก Hugging Face/GitHub, การถามเลือกโหมดสื่อสารครั้งแรก และเลือก Local หรือ Google Colab แยกขั้นสร้างเสียงและตัดต่อ)
-- **MCP Server:** ตั้งค่าการเชื่อมต่อ Voice Studio MCP Server จากตัวอย่างใน [voice-studio/configs/mcp_config.example.json](voice-studio/configs/mcp_config.example.json) (`python voice-studio/studio.py mcp`) เพื่อให้ AI Agent เรียกใช้เครื่องมือ (`studio_doctor`, `studio_voices`, `studio_run`, `studio_colab_*`, `studio_transcribe`) ผ่าน MCP ได้โดยตรง
+- **MCP Server:** ตั้งค่าการเชื่อมต่อ Voice Studio MCP Server จากตัวอย่างใน [voice-studio/configs/mcp_config.example.json](voice-studio/configs/mcp_config.example.json) (`python voice-studio/studio.py mcp`) รองรับครบ **16 เครื่องมือ** ได้แก่ `studio_doctor`, `studio_voices`, `studio_models_verify`, `studio_prepare_preview`, `studio_transcribe`, `studio_run` (รองรับ `voice_overrides`, `output_overrides`, `slides`, `extra_vocab_path`), `studio_status`, `studio_config`, `studio_bundle`, `studio_colab_ping`, `studio_colab_logs`, `studio_colab_download`, `studio_colab_exec`, `studio_colab_stop`, `studio_auth_status`, และ `studio_auth_login`
 
 ---
 

@@ -20,8 +20,6 @@ TOOL_CORE_FILES: List[Path] = [
     Path("configs/mcp_config.example.json"),
     Path("configs/custom_voice.example.yaml"),
     Path("README.md"),
-    Path("models/manifest.json"),
-    Path("models/README.md"),
     Path("licenses/GawrGura-RVC_README.md"),
     Path("licenses/GawrGura-RVC_metadata.json"),
     Path("licenses/Applio_LICENSE.txt"),
@@ -41,6 +39,11 @@ TOOL_CORE_FILES: List[Path] = [
     Path("assets/fonts/NotoSans-Bold.ttf"),
     Path("assets/fonts/NotoSansThai-Regular.ttf"),
     Path("assets/fonts/NotoSansThai-Bold.ttf"),
+]
+
+TOOL_OPTIONAL_FILES: List[Path] = [
+    Path("models/manifest.json"),
+    Path("models/README.md"),
 ]
 
 
@@ -70,6 +73,11 @@ def collect_bundle_paths(root_dir: Path = PROJECT_ROOT, include_paths: Optional[
         if not abs_path.is_file():
             raise FileNotFoundError(f"Missing required core studio file: {rel_path}")
         if rel_path not in seen:
+            seen.add(rel_path)
+            files_to_pack.append(rel_path)
+
+    for rel_path in TOOL_OPTIONAL_FILES:
+        if (root_dir / rel_path).is_file() and rel_path not in seen:
             seen.add(rel_path)
             files_to_pack.append(rel_path)
 

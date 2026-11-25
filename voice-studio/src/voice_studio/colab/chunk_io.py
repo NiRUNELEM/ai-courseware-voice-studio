@@ -232,6 +232,7 @@ def provision_colab_session(
     high_ram: bool,
     timeout: float = 420.0,
     poll_sleep_sec: float = 5.0,
+    fallback_tiers: Optional[List[str]] = None,
 ) -> Dict[str, str]:
     """Provisions a Colab CLI runtime with timeout-recovery polling and automatic GPU fallback on 503."""
     proc: Optional[subprocess.CompletedProcess[str]] = None
@@ -281,7 +282,15 @@ def provision_colab_session(
             return existing
         err_msg = (proc.stderr or proc.stdout).strip()
         if _is_capacity_503(err_msg):
-            for fb_hw in _GPU_FALLBACK_CHAIN.get(desired_hw.upper(), ()):
+            if fallback_tiers is not None and len(fallback_tiers) > 0:
+                chain = tuple(
+                    t.strip().upper()
+                    for t in fallback_tiers
+                    if t.strip() and t.strip().lower() != "none" and t.strip().upper() != desired_hw.upper()
+                )
+            else:
+                chain = _GPU_FALLBACK_CHAIN.get(desired_hw.upper(), ())
+            for fb_hw in chain:
                 fb_cmd = _replace_gpu_flag(cmd, fb_hw)
                 print(
                     f"[colab-cli][WARN] GPU {desired_hw} unavailable (503); "

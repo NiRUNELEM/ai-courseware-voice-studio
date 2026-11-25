@@ -200,6 +200,9 @@ def render_job_video(
     nvenc_preset: str = "p4",
     nvenc_cq: int = 21,
     bit_depth: int = 16,
+    video_codec: str = "auto",
+    progress_bar: bool = True,
+    transition_frames: int = 24,
 ) -> Dict[str, Any]:
     """Renders requested WAV/MP3/1080p MP4 deliverables & HTML5 players cleanly under job_dir/deliverables."""
     t0 = time.perf_counter()
@@ -239,7 +242,7 @@ def render_job_video(
 
     if want_mp4:
         if not is_dry_run:
-            enc_cfg = detect_best_video_encoder()
+            enc_cfg = detect_best_video_encoder(preferred_codec=video_codec)
         n_workers = max(1, workers or int(enc_cfg.get("workers", 2)))
 
         def _render_slide(sl: Dict[str, Any]) -> Optional[tuple[int, str]]:
@@ -253,7 +256,7 @@ def render_job_video(
             if base_img.size != (SLIDE_W, SLIDE_H):
                 base_img = base_img.resize((SLIDE_W, SLIDE_H), Image.Resampling.LANCZOS)
             apply_prog = (s_no != 1) and len(items) > 0
-            buffers = prepare_stage_buffers(base_img, items, apply_prog)
+            buffers = prepare_stage_buffers(base_img, items, apply_prog, transition_frames=transition_frames)
             if is_dry_run:
                 write_dry_run_preview(s_no, len(slide_numbers), apply_prog, base_img, items, buffers, str(deliv_dir))
                 return None
@@ -273,6 +276,7 @@ def render_job_video(
                 aac_bitrate=aac_bitrate,
                 nvenc_preset=nvenc_preset,
                 nvenc_cq=nvenc_cq,
+                progress_bar=progress_bar,
             )
             return (s_no, seg_mp4)
 

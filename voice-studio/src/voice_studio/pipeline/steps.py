@@ -280,6 +280,9 @@ def step_render(
         nvenc_preset=cfg.output.nvenc_preset,
         nvenc_cq=cfg.output.nvenc_cq,
         bit_depth=cfg.voice_profile.mastering.bit_depth if cfg.voice_profile else 16,
+        video_codec=cfg.output.video_codec,
+        progress_bar=cfg.output.progress_bar,
+        transition_frames=cfg.output.transition_frames,
     )
     msg = f"Deliverables complete (codec={artifacts.get('codec')}, elapsed={artifacts.get('elapsed_sec')}s)"
     if on_progress:

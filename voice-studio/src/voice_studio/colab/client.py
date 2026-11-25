@@ -95,6 +95,16 @@ class ColabClient:
         bridge = self._drive_bridge()
         return {"ok": True, "mode": "colab_drive", "bridge": type(bridge).__name__}
 
+    def stop_session(self, session_name: str = "") -> Dict[str, Any]:
+        """Stops the active Colab CLI session to immediately stop Compute Unit consumption."""
+        eff = self._effective_target()
+        if eff != "colab_cli":
+            return {"ok": False, "mode": eff, "detail": "stop_session is only supported for colab_cli target"}
+        bridge = self._cli_bridge()
+        target_name = session_name.strip() or bridge.session_name
+        bridge.stop_session(target_name)
+        return {"ok": True, "mode": "colab_cli", "stopped_session": target_name}
+
     def _stage_path(self, raw_path: str, bundle_subpath: str, staged: List[Tuple[Path, str]]) -> str:
         resolved = resolve_repo_path(raw_path, self.base_dir)
         if not resolved.is_file():

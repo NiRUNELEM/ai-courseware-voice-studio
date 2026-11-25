@@ -111,7 +111,62 @@ python studio.py colab exec --config configs/colab_pro.yaml --cmd "nvidia-smi"
 
 ---
 
-## 5. Verification Gates
+## 5. Python SDK (`from voice_studio import VoiceStudio`)
+
+You can drive every Voice Studio workflow programmatically from Python without shelling out to the CLI:
+
+```python
+from voice_studio import VoiceStudio
+
+studio = VoiceStudio("configs/studio.yaml")
+
+# Inspect hardware, built-in voices, and EQ presets
+print(studio.doctor())
+print(studio.voices())
+
+# Run with custom DSP mastering, RVC tuning, and H.264 web-ready video codec
+result = studio.run(
+    input_path="input/sample_neutral.json",
+    job_id="my_sdk_demo",
+    voice="gawr_gura_hybrid",
+    target="local",
+    voice_overrides={
+        "rvc": {"pitch_shift": 2, "f0_stabilizer": True, "pre_gate_rms_ms": 25.0},
+    },
+    output_overrides={
+        "eq_preset": "warm_male",       # anime_female | warm_male | neutral | off
+        "highpass_hz": 85,
+        "limiter_db": -1.8,
+        "video_codec": "h264",          # auto | hevc | h264 | libx264 | libx265
+        "progress_bar": True,
+    },
+)
+print(result["status"], result["deliverables"])
+```
+
+---
+
+## 6. MCP Server (16 Tools)
+
+`python studio.py mcp` starts a JSON-RPC 2.0 stdio MCP server exposing **16 tools**:
+
+| Tool | Purpose |
+|---|---|
+| `studio_doctor` | Inspect Python, CUDA/GPU, FFmpeg/NVENC, Whisper ASR, and RVC directories |
+| `studio_voices` | List voice profiles + built-in `eq_presets`, or inspect one voice profile |
+| `studio_models_verify` | Verify local RVC/Applio weights and SHA-256 checksums |
+| `studio_prepare_preview` | Preview Thai phonetic normalization and TTS strings before synthesis |
+| `studio_transcribe` | Transcribe audio/video via Whisper ASR into TXT, SRT, JSON, and Studio script |
+| `studio_run` | Run pipeline locally or on Colab with `voice_overrides`, `output_overrides`, `slides`, `extra_vocab_path` |
+| `studio_status` | Query job status and output artifacts |
+| `studio_config` | Read or persist `studio.yaml` / `colab_pro.yaml` settings (GPU tier, EQ, limiter, F0 stabilizer, video codec) |
+| `studio_bundle` | Build and CRC-verify `exports/voice_studio_colab_bundle.zip` |
+| `studio_colab_ping` / `studio_colab_logs` / `studio_colab_download` / `studio_colab_exec` / `studio_colab_stop` | Full Colab lifecycle management (including stopping GPU sessions to save Compute Units) |
+| `studio_auth_status` / `studio_auth_login` | Inspect and complete first-run Colab CLI / Drive / Agent auth & MCP config sync |
+
+---
+
+## 7. Verification Gates
 
 ```bash
 python studio.py verify

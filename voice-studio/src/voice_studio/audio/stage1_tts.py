@@ -175,8 +175,13 @@ def synthesize_with_edge_tts(
     noise_gate_threshold: float = 0.008,
     clean_pre_model: bool = True,
     fallback_warnings: Optional[List[Dict[str, str]]] = None,
+    fallback_voice: str = "th-TH-NiwatNeural",
+    fallback_pitch: str = "+22Hz",
+    pre_rvc_highpass_hz: int = 85,
+    pre_rvc_lowpass_hz: int = 11500,
+    pre_rvc_denoise: bool = True,
 ) -> float:
-    """Synthesizes speech with edge-tts, auto-recovering via fallback voice + warnings on NoAudioReceived."""
+    """Synthesizes speech with edge-tts, auto-recovering via configurable fallback voice on NoAudioReceived."""
     try:
         import edge_tts
     except ImportError as exc:
@@ -185,8 +190,8 @@ def synthesize_with_edge_tts(
     safe_text = _sanitize_tts_text(text)
     last_err: Optional[Exception] = None
     fallback_candidates: List[tuple[str, str]] = [(voice, pitch)]
-    if voice == "th-TH-PremwadeeNeural":
-        fallback_candidates.append(("th-TH-NiwatNeural", "+22Hz"))
+    if fallback_voice and fallback_voice != voice:
+        fallback_candidates.append((fallback_voice, fallback_pitch))
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         raw_mp3 = os.path.join(tmp_dir, "edge_raw.mp3")
@@ -217,6 +222,9 @@ def synthesize_with_edge_tts(
                             target_lufs=target_lufs,
                             noise_gate_threshold=noise_gate_threshold,
                             bit_depth=24,
+                            highpass_hz=pre_rvc_highpass_hz,
+                            lowpass_hz=pre_rvc_lowpass_hz,
+                            denoise=pre_rvc_denoise,
                         )
                     return convert_to_pcm_wav(raw_mp3, output_wav, sample_rate=sample_rate, bit_depth=24, clean_pre_model=False)
                 except Exception as exc:
@@ -263,6 +271,12 @@ def synthesize_stage1_batch(
     resume: bool = True,
     on_progress: Optional[Callable[[int, int], None]] = None,
     fallback_warnings: Optional[List[Dict[str, str]]] = None,
+    clean_pre_model: bool = True,
+    fallback_voice: str = "th-TH-NiwatNeural",
+    fallback_pitch: str = "+22Hz",
+    pre_rvc_highpass_hz: int = 85,
+    pre_rvc_lowpass_hz: int = 11500,
+    pre_rvc_denoise: bool = True,
 ) -> Dict[str, float]:
     """Synthesizes Stage 1 WAVs concurrently with pre-model Noise Gate + LUFS normalization."""
     durations: Dict[str, float] = {}
@@ -311,8 +325,13 @@ def synthesize_stage1_batch(
                     pacing_sec=pacing_sec,
                     target_lufs=target_lufs,
                     noise_gate_threshold=noise_gate_threshold,
-                    clean_pre_model=True,
+                    clean_pre_model=clean_pre_model,
                     fallback_warnings=fallback_warnings,
+                    fallback_voice=fallback_voice,
+                    fallback_pitch=fallback_pitch,
+                    pre_rvc_highpass_hz=pre_rvc_highpass_hz,
+                    pre_rvc_lowpass_hz=pre_rvc_lowpass_hz,
+                    pre_rvc_denoise=pre_rvc_denoise,
                 ),
             )
             for t in pending

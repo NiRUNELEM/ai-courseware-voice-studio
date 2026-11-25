@@ -264,6 +264,10 @@ def build_voice_profile(
         s1_d["text_mode"] = str(vb["text_mode"])
     if "clause_spacing" in vb:
         s1_d["clause_spacing"] = bool(vb["clause_spacing"])
+    if "fallback_voice" in vb and vb["fallback_voice"] is not None:
+        s1_d["fallback_voice"] = str(vb["fallback_voice"])
+    if "fallback_pitch" in vb and vb["fallback_pitch"] is not None:
+        s1_d["fallback_pitch"] = str(vb["fallback_pitch"])
 
     if isinstance(vb.get("stage1"), dict):
         s1_d.update(vb["stage1"])
@@ -406,5 +410,8 @@ def profile_to_rvc_dict(profile: VoiceProfile) -> Dict[str, Any]:
         "comp_ratio": float(m.comp_ratio),
         "limiter_db": float(m.limiter_db),
         "pre_rvc_conditioning": bool(m.pre_rvc_conditioning),
+        "pre_rvc_highpass_hz": int(m.pre_rvc_highpass_hz),
+        "pre_rvc_lowpass_hz": int(m.pre_rvc_lowpass_hz),
+        "pre_rvc_denoise": bool(m.pre_rvc_denoise),
         "mp3_bitrate": str(m.mp3_bitrate),
     }

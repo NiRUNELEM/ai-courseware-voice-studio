@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voice-studio"
-version = "2.1.0"
+version = "2.2.0"
 description = "General-Purpose Whisper ASR Transcription, Edge-TTS, Gawr Gura / Custom RVC v2 Vocal Synthesis, and 1080p@60fps Video Studio (Local & Google Colab Pro)."
 readme = "README.md"
 requires-python = ">=3.10"

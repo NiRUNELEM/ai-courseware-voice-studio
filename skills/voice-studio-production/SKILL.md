@@ -21,7 +21,8 @@ Skill ชุดเดียวรวมครบตั้งแต่การ�
 | ช่องทางการสั่งงาน | วิธีใช้งาน | เหมาะสำหรับ |
 |---|---|---|
 | **CLI (`studio.py`)** | `python voice-studio/studio.py <doctor\|voices\|input\|run\|transcribe\|models\|bundle\|verify>` | สั่งรันตรงผ่าน Terminal หรือ CI/CD |
-| **Voice Studio MCP Server** | ตั้งค่าจาก `voice-studio/configs/mcp_config.example.json` (`studio.py mcp`) เรียกใช้ `studio_doctor`, `studio_voices`, `studio_models_verify`, `studio_run`, `studio_status`, `studio_transcribe`, `studio_colab_*` | ให้ AI Coding Agent สั่งงานผ่าน MCP Protocol โดยตรง |
+| **Python SDK (`VoiceStudio`)** | `from voice_studio import VoiceStudio` พร้อม `voice_overrides` / `output_overrides` | ฝัง Pipeline เข้ากับสคริปต์หรือแอป Python ของผู้ใช้ |
+| **Voice Studio MCP Server (16 Tools)** | ตั้งค่าจาก `voice-studio/configs/mcp_config.example.json` (`studio.py mcp`) รองรับ `studio_doctor`, `studio_voices` (+ `eq_presets`), `studio_run` (+ `voice_overrides`/`output_overrides`), `studio_config`, `studio_colab_stop` และอีก 11 เครื่องมือ | ให้ AI Coding Agent สั่งงานผ่าน MCP Protocol โดยตรง |
 | **Colab Bridges** | เลือกผ่าน `--target`: `colab_cli` (แนะนำ — รองรับ GPU Auto-Fallback `L4 -> T4 -> A100` เมื่อติด 503), `colab_drive` (Google Drive queue), `colab_agent` (HTTP agent) หรือ `colab-mcp` | รันงานหนักบน Google Colab Pro (ใช้ Compute Units) |
 
 ### ข้อกำหนดขั้นต่ำ

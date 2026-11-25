@@ -76,6 +76,12 @@ def run_stage1_tts(
             resume=resume,
             on_progress=on_progress,
             fallback_warnings=warnings_log,
+            clean_pre_model=bool(m_cfg.pre_rvc_conditioning),
+            fallback_voice=str(s1_cfg.fallback_voice),
+            fallback_pitch=str(s1_cfg.fallback_pitch),
+            pre_rvc_highpass_hz=int(m_cfg.pre_rvc_highpass_hz),
+            pre_rvc_lowpass_hz=int(m_cfg.pre_rvc_lowpass_hz),
+            pre_rvc_denoise=bool(m_cfg.pre_rvc_denoise),
         )
     manifest_path = job_dir / "work" / "stage1_manifest.json"
     save_json_atomic(manifest_path, {"voice_id": profile.voice_id, "items": durations, "fallback_warnings": warnings_log})
@@ -157,6 +163,15 @@ def run_stage2_voice_convert(
                         declick=m_cfg.declick,
                         denoise_nf_db=m_cfg.denoise_nf_db,
                         denoise_nr_db=m_cfg.denoise_nr_db,
+                        highpass_hz=m_cfg.highpass_hz,
+                        lowpass_hz=m_cfg.lowpass_hz,
+                        eq_preset=m_cfg.eq_preset,
+                        eq_bands=m_cfg.eq_bands or None,
+                        comp_threshold_db=m_cfg.comp_threshold_db,
+                        comp_ratio=m_cfg.comp_ratio,
+                        gate_ratio=m_cfg.gate_ratio,
+                        gate_release_ms=m_cfg.gate_release_ms,
+                        limiter_db=m_cfg.limiter_db,
                     ),
                 )
                 for t in tasks
