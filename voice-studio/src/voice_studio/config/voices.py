@@ -285,20 +285,11 @@ def build_voice_profile(
             s2_d["enabled"] = False
             s2_d["backend"] = "none"
 
-    for k in (
-        "sample_rate",
-        "bit_depth",
-        "resampler_precision",
-        "target_lufs",
-        "denoise",
-        "denoise_nf_db",
-        "denoise_nr_db",
-        "declick",
-        "noise_gate",
-        "noise_gate_threshold",
-        "inter_item_silence",
-        "mp3_bitrate",
-    ):
+    if isinstance(vb.get("mastering"), dict):
+        for k, v in vb["mastering"].items():
+            if k in MasteringConfig.__dataclass_fields__ and v is not None:
+                m_d[k] = v
+    for k in MasteringConfig.__dataclass_fields__:
         if k in ob and ob[k] is not None:
             m_d[k] = ob[k]
     if "sample_rate" in ob and ob["sample_rate"]:
@@ -392,6 +383,9 @@ def profile_to_rvc_dict(profile: VoiceProfile) -> Dict[str, Any]:
         "output_peak_ceiling": float(s2.output_peak_ceiling),
         "rvc_fp32": bool(s2.rvc_fp32),
         "intermediate_float": bool(s2.intermediate_float),
+        "f0_stabilizer": bool(s2.f0_stabilizer),
+        "pre_gate_rms_ms": float(s2.pre_gate_rms_ms),
+        "pre_gate_ramp_ms": float(s2.pre_gate_ramp_ms),
         "sample_rate": int(m.sample_rate),
         "bit_depth": int(m.bit_depth),
         "resampler_precision": int(m.resampler_precision),
@@ -402,5 +396,15 @@ def profile_to_rvc_dict(profile: VoiceProfile) -> Dict[str, Any]:
         "declick": bool(m.declick),
         "noise_gate": bool(m.noise_gate),
         "noise_gate_threshold": float(m.noise_gate_threshold),
+        "gate_ratio": float(m.gate_ratio),
+        "gate_release_ms": float(m.gate_release_ms),
+        "highpass_hz": int(m.highpass_hz),
+        "lowpass_hz": int(m.lowpass_hz),
+        "eq_preset": str(m.eq_preset),
+        "eq_bands": list(m.eq_bands),
+        "comp_threshold_db": float(m.comp_threshold_db),
+        "comp_ratio": float(m.comp_ratio),
+        "limiter_db": float(m.limiter_db),
+        "pre_rvc_conditioning": bool(m.pre_rvc_conditioning),
         "mp3_bitrate": str(m.mp3_bitrate),
     }

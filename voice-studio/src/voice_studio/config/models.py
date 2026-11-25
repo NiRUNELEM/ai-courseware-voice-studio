@@ -65,6 +65,9 @@ class Stage2Config:
     output_peak_ceiling: float = 0.89
     rvc_fp32: bool = False
     intermediate_float: bool = False
+    f0_stabilizer: bool = True
+    pre_gate_rms_ms: float = 25.0
+    pre_gate_ramp_ms: float = 35.0
 
 
 @dataclass
@@ -79,6 +82,16 @@ class MasteringConfig:
     declick: bool = True
     noise_gate: bool = True
     noise_gate_threshold: float = 0.007
+    gate_ratio: float = 8.0
+    gate_release_ms: float = 110.0
+    highpass_hz: int = 105
+    lowpass_hz: int = 0
+    eq_preset: str = "anime_female"
+    eq_bands: List[Dict[str, float]] = field(default_factory=list)
+    comp_threshold_db: float = -16.0
+    comp_ratio: float = 1.5
+    limiter_db: float = -1.8
+    pre_rvc_conditioning: bool = True
     inter_item_silence: float = 0.40
     mp3_bitrate: str = "192k"
 

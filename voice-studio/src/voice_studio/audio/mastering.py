@@ -95,7 +95,9 @@ def _clamp_digital_silence_floor(pcm_bytes: bytes, sampwidth: int = 2, floor_cod
     return bytes(out)
 
 
-def _compute_lufs_gain_db(pcm_bytes: bytes, target_lufs: float, sampwidth: int) -> float:
+def _compute_lufs_gain_db(
+    pcm_bytes: bytes, target_lufs: float, sampwidth: int, headroom_db: float = -1.8
+) -> float:
     """Computes BS.1770 integrated gain in dB with headroom guard so peaks never crunch."""
     samples = _decode_pcm_mono(pcm_bytes, channels=1, sampwidth=sampwidth)
     if not samples:
@@ -109,8 +111,7 @@ def _compute_lufs_gain_db(pcm_bytes: bytes, target_lufs: float, sampwidth: int) 
     peak = max((abs(s) for s in samples), default=0.0)
     if peak > 1e-6:
         peak_db = 20.0 * math.log10(peak)
-        # Keep raw peaks cleanly below -1.8 dBFS so limiter never crunches or distorts.
-        gain_db = min(gain_db, -1.8 - peak_db)
+        gain_db = min(gain_db, float(headroom_db) - peak_db)
     return max(-16.0, min(14.0, gain_db))
 
 
@@ -123,6 +124,7 @@ def _run_ffmpeg_norm_gate_limiter(
     target_lufs: float,
     bit_depth: int,
     clamp_floor: bool = False,
+    headroom_db: float = -1.8,
 ) -> float:
     """Shared two-pass FFmpeg float32 filter -> LUFS gain -> gate/limiter -> PCM WAV chain (zero clip)."""
     if not shutil.which("ffmpeg"):
@@ -145,7 +147,7 @@ def _run_ffmpeg_norm_gate_limiter(
         with wave.open(filtered_wav, "rb") as wf_in:
             pcm = wf_in.readframes(wf_in.getnframes())
             in_sw = wf_in.getsampwidth()
-        gain_db = _compute_lufs_gain_db(pcm, target_lufs=target_lufs, sampwidth=in_sw)
+        gain_db = _compute_lufs_gain_db(pcm, target_lufs=target_lufs, sampwidth=in_sw, headroom_db=headroom_db)
         float_chain = [f"volume={gain_db:.4f}dB", *post_filters]
         proc2 = subprocess.run(
             [
@@ -314,6 +316,39 @@ def measure_wav_acoustics(wav_path: str) -> Dict[str, float]:
     }
 
 
+EQ_PRESETS: Dict[str, List[Dict[str, float]]] = {
+    "anime_female": [
+        {"f": 280.0, "q": 1.4, "g": -2.0},
+        {"f": 2400.0, "q": 1.6, "g": 1.2},
+        {"f": 6000.0, "q": 2.0, "g": -2.4},
+        {"f": 7600.0, "q": 2.2, "g": -2.0},
+    ],
+    "warm_male": [
+        {"f": 180.0, "q": 1.2, "g": 1.0},
+        {"f": 320.0, "q": 1.4, "g": -1.5},
+        {"f": 3000.0, "q": 1.6, "g": 1.2},
+        {"f": 6800.0, "q": 2.0, "g": -1.5},
+    ],
+    "neutral": [
+        {"f": 250.0, "q": 1.4, "g": -1.0},
+        {"f": 6500.0, "q": 2.0, "g": -1.2},
+    ],
+    "off": [],
+}
+
+
+def resolve_eq_filters(eq_preset: str = "anime_female", eq_bands: List[Dict[str, float]] | None = None) -> List[str]:
+    """Builds FFmpeg equalizer filter strings from custom eq_bands or named eq_preset."""
+    bands = list(eq_bands) if eq_bands else EQ_PRESETS.get(str(eq_preset or "anime_female").lower(), EQ_PRESETS["anime_female"])
+    out: List[str] = []
+    for b in bands:
+        freq = max(20.0, min(20000.0, float(b.get("f", 1000.0))))
+        q_val = max(0.1, min(10.0, float(b.get("q", 1.5))))
+        gain = max(-18.0, min(18.0, float(b.get("g", 0.0))))
+        out.append(f"equalizer=f={freq:g}:t=q:w={q_val:g}:g={gain:g}")
+    return out
+
+
 def apply_clean_speech_mastering(
     src_wav: str,
     dst_wav: str,
@@ -327,31 +362,43 @@ def apply_clean_speech_mastering(
     declick: bool = False,
     denoise_nf_db: int = -48,
     denoise_nr_db: int = 8,
+    highpass_hz: int = 105,
+    lowpass_hz: int = 0,
+    eq_preset: str = "anime_female",
+    eq_bands: List[Dict[str, float]] | None = None,
+    comp_threshold_db: float = -16.0,
+    comp_ratio: float = 1.5,
+    gate_ratio: float = 8.0,
+    gate_release_ms: float = 110.0,
+    limiter_db: float = -1.8,
 ) -> float:
-    """Applies SoXR resampling + de-click + de-harsh + denoise + clip-free LUFS + gate + -2.5dB limiter."""
+    """Applies configurable SoXR resampling + EQ + denoise + clip-free LUFS + gate + limiter."""
     prec = max(16, min(33, int(resampler_precision)))
-    lowpass_hz = 17500 if int(sample_rate) >= 48000 else 15500
+    lp_hz = int(lowpass_hz) if int(lowpass_hz) > 0 else (17500 if int(sample_rate) >= 48000 else 15500)
+    hp_hz = max(0, int(highpass_hz))
+    lim_db = max(-12.0, min(-0.1, float(limiter_db)))
 
     pre_filters = [f"aresample=resampler=soxr:precision={prec}"]
     if declick:
         pre_filters.append("adeclick")
-    pre_filters.extend([
-        "highpass=f=105",
-        f"lowpass=f={lowpass_hz}",
-        "equalizer=f=280:t=q:w=1.4:g=-2.0",
-        "equalizer=f=2400:t=q:w=1.6:g=1.2",
-        "equalizer=f=6000:t=q:w=2.0:g=-2.4",
-        "equalizer=f=7600:t=q:w=2.2:g=-2.0",
-    ])
+    if hp_hz > 0:
+        pre_filters.append(f"highpass=f={hp_hz}")
+    pre_filters.append(f"lowpass=f={lp_hz}")
+    pre_filters.extend(resolve_eq_filters(eq_preset=eq_preset, eq_bands=eq_bands))
     if denoise:
         pre_filters.append(f"afftdn=nf={int(denoise_nf_db)}:nr={int(denoise_nr_db)}:nt=w")
-    pre_filters.append("acompressor=threshold=-16dB:ratio=1.5:attack=15:release=160:knee=6.0")
+    if float(comp_ratio) > 1.0:
+        pre_filters.append(
+            f"acompressor=threshold={float(comp_threshold_db):g}dB:ratio={float(comp_ratio):g}:attack=15:release=160:knee=6.0"
+        )
 
     post_filters = []
     if noise_gate:
         thresh = max(0.0005, min(0.2, float(noise_gate_threshold)))
-        post_filters.append(f"agate=threshold={thresh}:range=0.0003:ratio=8.0:attack=6:release=110:knee=3.0:detection=rms")
-    post_filters.append("alimiter=limit=-1.8dB:attack=12:release=180:level=false")
+        g_ratio = max(1.5, min(20.0, float(gate_ratio)))
+        g_rel = max(20.0, min(500.0, float(gate_release_ms)))
+        post_filters.append(f"agate=threshold={thresh}:range=0.0003:ratio={g_ratio:g}:attack=6:release={g_rel:g}:knee=3.0:detection=rms")
+    post_filters.append(f"alimiter=limit={lim_db:g}dB:attack=12:release=180:level=false")
 
     return _run_ffmpeg_norm_gate_limiter(
         src_audio=src_wav,
@@ -362,6 +409,7 @@ def apply_clean_speech_mastering(
         target_lufs=target_lufs,
         bit_depth=bit_depth,
         clamp_floor=bool(noise_gate),
+        headroom_db=lim_db,
     )
 
 

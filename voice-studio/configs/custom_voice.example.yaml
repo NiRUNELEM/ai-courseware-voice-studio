@@ -43,6 +43,9 @@ voice:
     protect: 0.58                          # 0.50-0.60 preserves unvoiced Thai/English consonants
     hop_length: 128
     input_gate_threshold: 0.004            # Gentle pre-RVC gate prevents chattering on soft endings
+    f0_stabilizer: true                    # Smooths RMVPE micro-tremolo (set false for singing/vibrato)
+    pre_gate_rms_ms: 25.0                  # Pre-RVC RMS envelope window (ms)
+    pre_gate_ramp_ms: 35.0                 # Pre-RVC Hanning fade ramp (ms)
     rvc_fp32: true
     intermediate_float: true
 
@@ -52,5 +55,17 @@ output:
   bit_depth: 24
   resampler_precision: 33
   target_lufs: -18.5
+  highpass_hz: 105                         # Lower to 75-85 for male/bass voices, or 0 to disable
+  lowpass_hz: 0                            # 0 = auto (17500 Hz @ 48kHz, 15500 Hz otherwise)
+  eq_preset: "anime_female"                # anime_female | warm_male | neutral | off
+  # eq_bands:                              # Optional custom EQ bands (overrides eq_preset when non-empty)
+  #   - { f: 280, q: 1.4, g: -2.0 }
+  #   - { f: 2400, q: 1.6, g: 1.2 }
+  comp_threshold_db: -16.0                 # Gentle broadcast compressor threshold (dB)
+  comp_ratio: 1.5                          # Set <= 1.0 to disable compressor
   denoise: true
   noise_gate: true
+  noise_gate_threshold: 0.0025
+  gate_ratio: 8.0                          # Gentle expansion ratio (avoid >12 to prevent abrupt chop)
+  gate_release_ms: 110.0                   # Release time (ms) for natural Thai word endings
+  limiter_db: -1.8                         # True-peak ceiling & headroom guard (dBFS)

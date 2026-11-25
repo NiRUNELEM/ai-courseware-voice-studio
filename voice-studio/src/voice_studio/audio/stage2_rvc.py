@@ -30,6 +30,8 @@ def condition_rvc_input_tensor(
     gate_threshold: float = 0.005,
     target_rms: float = 0.085,
     peak_ceiling: float = 0.72,
+    rms_ms: float = 25.0,
+    ramp_ms: float = 35.0,
 ) -> Any:
     """Applies DC removal, RMS-envelope Noise Gate, and speech RMS/peak normalization before RVC."""
     import numpy as np
@@ -39,7 +41,7 @@ def condition_rvc_input_tensor(
         return arr
     arr = arr - float(np.mean(arr))
 
-    win = max(1, int(round(sr * 0.025)))
+    win = max(1, int(round(sr * (max(1.0, float(rms_ms)) / 1000.0))))
     if arr.size >= win:
         sq = np.convolve(arr * arr, np.ones(win, dtype=np.float32) / float(win), mode="same")
         rms_env = np.sqrt(np.maximum(0.0, sq))
@@ -47,7 +49,7 @@ def condition_rvc_input_tensor(
         rms_env = np.abs(arr)
 
     raw_mask = (rms_env >= float(gate_threshold)).astype(np.float32)
-    smooth_w = max(1, int(round(sr * 0.035)))
+    smooth_w = max(1, int(round(sr * (max(1.0, float(ramp_ms)) / 1000.0))))
     if smooth_w > 1 and arr.size >= smooth_w:
         ramp = np.hanning(smooth_w + 2)[1:-1].astype(np.float32)
         ramp /= max(1e-6, float(np.sum(ramp)))
@@ -95,9 +97,12 @@ def smooth_voiced_f0(f0_arr: Any) -> Any:
     return f0
 
 
-def _install_f0_stabilizer(vc_pipe: Any) -> None:
-    """Wraps Applio pipeline.get_f0 once to stabilize RMVPE micro-tremolo and keep f0_coarse synced."""
-    if vc_pipe is None or getattr(vc_pipe, "_f0_stabilized", False):
+def _install_f0_stabilizer(vc_pipe: Any, enabled: bool = True) -> None:
+    """Wraps Applio pipeline.get_f0 once to stabilize RMVPE micro-tremolo when enabled."""
+    if vc_pipe is None:
+        return
+    vc_pipe._f0_stabilizer_enabled = bool(enabled)
+    if getattr(vc_pipe, "_f0_stabilized", False):
         return
     orig_get_f0 = vc_pipe.get_f0
 
@@ -105,6 +110,8 @@ def _install_f0_stabilizer(vc_pipe: Any) -> None:
         import numpy as np
 
         res = orig_get_f0(*args, **kwargs)
+        if not getattr(vc_pipe, "_f0_stabilizer_enabled", True):
+            return res
         if isinstance(res, tuple) and len(res) == 2:
             _, f0_raw = res
             f0_sm = smooth_voiced_f0(f0_raw)
@@ -145,12 +152,12 @@ class _HotRvcSession:
         finally:
             os.chdir(orig_cwd)
 
-    def _ensure_models_loaded(self, model_path: str, sid: int, embedder_model: str) -> None:
+    def _ensure_models_loaded(self, model_path: str, sid: int, embedder_model: str, f0_stabilizer: bool = True) -> None:
         vc = self._vc
         if self.loaded_model_path != model_path or vc.net_g is None or vc.vc is None:
             vc.get_vc(model_path, sid, None, "auto")
-            _install_f0_stabilizer(vc.vc)
             self.loaded_model_path = model_path
+        _install_f0_stabilizer(vc.vc, enabled=f0_stabilizer)
         if vc.hubert_model is None or vc.last_embedder_model != embedder_model:
             vc.load_hubert(embedder_model, None)
             vc.last_embedder_model = embedder_model
@@ -174,6 +181,9 @@ class _HotRvcSession:
         input_target_rms: float = 0.140,
         input_peak_ceiling: float = 0.78,
         output_peak_ceiling: float = 0.89,
+        f0_stabilizer: bool = True,
+        pre_gate_rms_ms: float = 25.0,
+        pre_gate_ramp_ms: float = 35.0,
     ) -> None:
         abs_src = os.path.abspath(src_wav)
         abs_out = os.path.abspath(out_wav)
@@ -189,7 +199,7 @@ class _HotRvcSession:
                     import numpy as np
                     import soundfile as sf
 
-                    self._ensure_models_loaded(abs_model, sid, embedder_model)
+                    self._ensure_models_loaded(abs_model, sid, embedder_model, f0_stabilizer=f0_stabilizer)
                     vc = self._vc
                     audio = condition_rvc_input_tensor(
                         self._load_audio_infer(abs_src, 16000),
@@ -197,6 +207,8 @@ class _HotRvcSession:
                         gate_threshold=float(input_gate_threshold),
                         target_rms=float(input_target_rms),
                         peak_ceiling=float(input_peak_ceiling),
+                        rms_ms=float(pre_gate_rms_ms),
+                        ramp_ms=float(pre_gate_ramp_ms),
                     )
                     clean_idx = abs_idx.replace("trained", "added")
                     audio_opt = vc.vc.pipeline(
@@ -308,6 +320,9 @@ def convert_wav_with_rvc(
         input_target_rms=float(preset.get("input_target_rms", 0.140)),
         input_peak_ceiling=float(preset.get("input_peak_ceiling", 0.78)),
         output_peak_ceiling=float(preset.get("output_peak_ceiling", 0.89)),
+        f0_stabilizer=bool(preset.get("f0_stabilizer", True)),
+        pre_gate_rms_ms=float(preset.get("pre_gate_rms_ms", 25.0)),
+        pre_gate_ramp_ms=float(preset.get("pre_gate_ramp_ms", 35.0)),
     )
     return out_wav
 
@@ -326,6 +341,15 @@ def _master_with_preset(src_wav: str, out_wav: str, preset: Dict[str, Any]) -> f
         declick=bool(preset.get("declick", False)),
         denoise_nf_db=int(preset.get("denoise_nf_db", -48)),
         denoise_nr_db=int(preset.get("denoise_nr_db", 8)),
+        highpass_hz=int(preset.get("highpass_hz", 105)),
+        lowpass_hz=int(preset.get("lowpass_hz", 0)),
+        eq_preset=str(preset.get("eq_preset", "anime_female")),
+        eq_bands=preset.get("eq_bands") or None,
+        comp_threshold_db=float(preset.get("comp_threshold_db", -16.0)),
+        comp_ratio=float(preset.get("comp_ratio", 1.5)),
+        gate_ratio=float(preset.get("gate_ratio", 8.0)),
+        gate_release_ms=float(preset.get("gate_release_ms", 110.0)),
+        limiter_db=float(preset.get("limiter_db", -1.8)),
     )
 
 
