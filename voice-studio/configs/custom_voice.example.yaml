@@ -1,0 +1,56 @@
+# Example Custom Job & Voice Model Tuning Configuration
+# Copy this file to my_job.yaml and point `voice.rvc.local_pth` / `local_index`
+# (or HuggingFace `repo_id`) to any RVC v2 voice model you add under `models/rvc/<name>/`,
+# then run:
+#   python studio.py run --config my_job.yaml
+#
+# Notes on Stage 1 TTS backends:
+#   - `omnivoice_thai` (hotdogs/omnivoice-thai + Vocos 24kHz dry polish, offline HuggingFace)
+#   - `edge_tts` (Microsoft Edge neural TTS e.g. th-TH-PremwadeeNeural or th-TH-NiwatNeural)
+#   - Standalone custom zero-shot reference cloning (`--ref-audio path/to/custom_ref.wav`)
+#     is also available directly via `tools/omnivoice_thai_studio/`.
+
+job:
+  id: "my_custom_voice_job"
+  output_dir: "output"
+
+input:
+  path: "input/sample_neutral.json"
+  title: "My Custom RVC Production"
+
+voice:
+  profile: "custom_rvc"
+  display_name: "Custom Local RVC v2 Voice"
+  license: "custom-non-commercial"
+  tts_backend: "omnivoice_thai"            # omnivoice_thai | edge_tts | hf_kokoro_thai
+  hf_model_repo: "hotdogs/omnivoice-thai"  # Used by omnivoice_thai / hf_kokoro_thai
+  tts_voice: "th-TH-PremwadeeNeural"       # Used when tts_backend is edge_tts
+  tts_rate: "-4%"
+  tts_pitch: "+0Hz"
+  text_mode: "phonetic_spaced"             # phonetic_spaced | bilingual | raw
+  clause_spacing: true
+  rvc:
+    enabled: true
+    source_type: "local"                   # Use "huggingface" + repo_id to auto-download from HF
+    repo_id: ""
+    subdir: "custom_speaker"
+    local_pth: "models/rvc/custom_speaker/model.pth"
+    local_index: "models/rvc/custom_speaker/model.index"
+    pitch_shift: 0                         # Adjust semitones to match Stage 1 vs custom RVC timbre
+    f0_method: "rmvpe"                     # Recommended neural F0 tracker for Thai tones
+    index_rate: 0.08                       # 0.05-0.12 keeps Thai vowels smooth without raspiness
+    volume_envelope: 0.75                  # 0.75 prevents RMS pumping/warble on Thai syllables
+    protect: 0.58                          # 0.50-0.60 preserves unvoiced Thai/English consonants
+    hop_length: 128
+    input_gate_threshold: 0.004            # Gentle pre-RVC gate prevents chattering on soft endings
+    rvc_fp32: true
+    intermediate_float: true
+
+output:
+  formats: ["wav", "mp3"]                  # Audio-only example (add "mp4" to render 1080p60 video too)
+  sample_rate: 48000
+  bit_depth: 24
+  resampler_precision: 33
+  target_lufs: -18.5
+  denoise: true
+  noise_gate: true

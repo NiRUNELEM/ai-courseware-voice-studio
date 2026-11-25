@@ -1,0 +1,28 @@
+{
+  "title": "Sample Presentation Narration",
+  "slides_png_dir": "",
+  "pptx_path": "",
+  "extra_vocab_path": "",
+  "phonetic_vocab": {
+    "words": {
+      "AcmeApp": "แอกมี แอป"
+    }
+  },
+  "slides": [
+    {
+      "slide_no": 1,
+      "title": "บทนำและการตั้งค่าระบบ (Introduction & Setup)",
+      "items": [
+        "สวัสดีค่ะ วันนี้เราจะแนะนำการใช้งาน AcmeApp และระบบเชื่อมต่อกับ ดาต้าเบส ค่ะ",
+        "สามารถแก้ไขข้อความในไฟล์นี้ แล้วรันตรวจสอบด้วยคำสั่ง studio.py input check ได้ทันทีค่ะ"
+      ]
+    },
+    {
+      "slide_no": 2,
+      "title": "สรุปผลการทำงาน (Summary)",
+      "items": [
+        "ขอบคุณที่รับชมค่ะ หากมีคำศัพท์เฉพาะ สามารถเพิ่มลงใน extra_vocab_path หรือ phonetic_vocab ได้เลยค่ะ"
+      ]
+    }
+  ]
+}

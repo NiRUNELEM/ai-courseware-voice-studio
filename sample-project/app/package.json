@@ -1,0 +1,10 @@
+{
+  "name": "sample-api-starter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run index.ts",
+    "test": "bun test"
+  }
+}

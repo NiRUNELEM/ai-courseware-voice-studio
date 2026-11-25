@@ -1,0 +1,133 @@
+# ==============================================================================
+# Voice & Media Studio — Google Colab Pro High-Resolution Cloud Configuration
+# ==============================================================================
+# Kept strictly separate from configs/studio.yaml (Local Workstation profile).
+# Designed to saturate a Google Colab Pro account for maximum audio resolution,
+# lowest background noise, accurate Thai/English ASR, and lossless-grade render.
+#
+# GPU Tier Guide (Runtime -> Change runtime type on Google Colab Pro):
+#   - gpu_tier: "l4"   [RECOMMENDED] NVIDIA L4 24GB VRAM + 12 vCPU + High-RAM (53 GB)
+#                      Sweet spot: Ada Lovelace 8th-gen NVENC (hevc_nvenc p7), plenty of
+#                      VRAM for FP32 RVC + Whisper Large-v3-Turbo FP16, ~4.8 CU/hr burn.
+#   - gpu_tier: "a100" NVIDIA A100 40GB VRAM + 12 vCPU + High-RAM (83.5 GB)
+#                      Fastest RVC/Whisper throughput (~11.5 CU/hr burn); note A100 uses
+#                      compute acceleration and pairs cleanly with CPU x265 or T4/L4 NVENC.
+#   - gpu_tier: "t4"   NVIDIA T4 16GB VRAM + High-RAM fallback (~1.7 CU/hr burn)
+#                      Supports hevc_nvenc p7 and FP32 RVC / Large-v3-Turbo FP16 comfortably.
+#   - high_ram: true   Always toggle "High-RAM" ON in Colab Pro Runtime Settings so
+#                      SoXR 33-bit resampling, RMVPE, and parallel video frames never OOM.
+# ==============================================================================
+
+job:
+  id: ""                             # Auto-derived from input filename + voice unless --job is set
+  output_dir: "output"               # Job workspace root
+  dry_run: false                     # Full live cloud execution
+  resume: true                       # Skip already completed steps safely
+
+steps:
+  - prepare
+  - tts
+  - convert
+  - qa
+  - align
+  - render                           # Auto-prepends "transcribe" when input.path is audio/video
+
+input:
+  path: "input/sample_neutral.json"  # Neutral demo script (override via --input or job YAML)
+  slides: []                         # Empty = process all segments
+  slides_png_dir: ""
+  pptx_path: ""
+
+transcribe:
+  backend: "faster_whisper"          # CTranslate2 GPU FP16 Whisper engine on Colab Pro VRAM
+  model: "openai/whisper-large-v3-turbo"  # Highest Thai + English technical accuracy with fast L4/A100 latency
+  language: "th"                     # "th" for Thai/English technical narration (or "" to auto-detect)
+  beam_size: 5                       # Wide beam search for crisp foreign/technical word decoding
+  vad_filter: true                   # Silero VAD strips silent gaps before decoding (zero hallucination in noise pauses)
+  chunk_length_s: 30
+
+voice:
+  profile: "gawr_gura"               # Default RVC v2 voice (switch via --voice direct_tts or custom rvc block)
+  tts_backend: "edge_tts"
+  tts_voice: "th-TH-PremwadeeNeural" # Microsoft Edge Neural Thai Voice (Stage 1)
+  tts_rate: "-6%"                    # Slightly deliberate tempo for Thai + technical clarity
+  tts_pitch: "+0Hz"
+  text_mode: "bilingual"             # bilingual | phonetic_spaced (Royal Society Thai reading + pauses)
+  clause_spacing: true
+  pacing_sec: 0.40
+  rvc:
+    enabled: true
+    backend: "rvc_v2"
+    source_type: "huggingface"
+    repo_id: "KeroroK66/GawrGura"
+    zip_filename: "Gawr Gura - Weights.gg Model.zip"
+    pth_filename: "model.pth"
+    index_filename: "model.index"
+    subdir: "gawr_gura"
+    local_pth: ""
+    local_index: ""
+    pitch_shift: 2
+    f0_method: "rmvpe"               # Highest-accuracy neural pitch estimator
+    index_rate: 0.12                 # Subtle timbre blend without consonant raspiness
+    volume_envelope: 0.25            # Smooth RMS envelope tracking without vocal overdrive
+    protect: 0.45                    # Protects unvoiced Thai/English consonants cleanly
+    hop_length: 128
+    input_gate_threshold: 0.008      # -42 dBFS pre-RVC gate scrubs Edge-TTS inter-word noise before ContentVec/RMVPE
+    input_target_rms: 0.140          # Calibrated pre-RVC RMS so Stage 2 outputs near -18.0 LUFS naturally without +5 dB boost
+    input_peak_ceiling: 0.78         # -2.16 dBFS pre-RVC peak ceiling prevents vocoder saturation
+    output_peak_ceiling: 0.89        # -1.0 dBFS raw RVC safety headroom into Stage 3 mastering
+    rvc_fp32: true                   # COLAB PRO: Full 32-bit float RVC inference (config.is_half = False) eliminates FP16 noise floor
+    intermediate_float: true         # COLAB PRO: Export IEEE-754 float32 WAV from RVC into FFmpeg SoXR/LUFS mastering (zero 16-bit intermediate rounding)
+
+output:
+  dir: "output"
+  prefix: "studio_colab_pro"
+  formats: ["wav", "mp3", "mp4"]
+
+  # --- Cloud Mastering: Highest Resolution & Lowest Noise Floor ---
+  sample_rate: 48000                 # 48 kHz video-native master rate (matches AAC 48kHz with zero secondary resample)
+  bit_depth: 24                      # 24-bit integer PCM WAV (pcm_s24le, ~144 dB theoretical dynamic range)
+  resampler_precision: 33            # FFmpeg libsoxr Chebyshev ultra-high precision 33-bit resampler
+  target_lufs: -18.0                 # Clip-free speech loudness sweet spot (~ -2.5 dBFS True-Peak headroom)
+  lufs_tolerance: 1.5
+  min_snr_db: 45.0                   # Stricter cloud studio SNR QA floor (vs 28 dB local default)
+  duration_tolerance: 1.0
+  declick: true                      # FFmpeg adeclick removes RVC window-boundary clicks & micro-impulses
+  denoise: true
+  denoise_nf_db: -50                 # FFT denoise noise floor threshold (-50 dB scrubs hiss gently without thinness)
+  denoise_nr_db: 10                  # 10 dB background reduction tuned for clean neural speech
+  noise_gate: true
+  noise_gate_threshold: 0.005        # Tighter ~ -46 dB studio gate eliminates inter-word breath/static
+  inter_item_silence: 0.40
+  mp3_bitrate: "320k"                # Maximum CBR 320 kbps MP3
+  aac_bitrate: "320k"                # Maximum 320 kbps AAC-LC inside MP4 video
+
+  # --- Cloud GPU Video Encoding ---
+  fps: 60
+  nvenc_preset: "p7"                 # COLAB PRO NVENC: Slowest/Best p7 quality preset (Ada L4 / T4 NVENC)
+  nvenc_cq: 18                       # Constant Quality CQ 18 (sharp high-contrast text & smooth progressive reveals)
+
+runtime:
+  target: "colab_cli"                # Config-first Colab execution ("colab_cli" auto-provisions gpu_tier, "colab_drive", "colab_agent", or "local")
+  gpu_tier: "l4"                     # Colab Pro target GPU selector: "l4" (recommended) | "a100" | "t4"
+  high_ram: true                     # Expects Colab Pro High-RAM enabled
+  precision: "fp32"                  # Full FP32 vocal conversion + FP16 GPU Whisper ASR
+  stage1_workers: 2                  # Safe concurrency + shared cooldown for Microsoft Edge-TTS without triggering NoAudioReceived throttling
+  cpu_workers: 12                    # Parallel FFmpeg SoXR 33-bit mastering & waveform alignment
+  video_workers: 4                   # Parallel NVENC / video segment workers
+  voice_python: ""                   # Optional override; leave empty inside Colab runtime
+  rvc_assets_root: ""                # Defaults to models/rvc inside workspace or Colab /content cache
+
+colab:
+  mode: "colab_cli"                  # "colab_cli" (direct GPU VM provisioning), "colab_drive" (Drive queue), or "colab_agent" (HTTP tunnel)
+  session_name: "voice-studio-pro"   # Named Colab CLI session managed by pre-flight GPU matching
+  disconnect_mismatched: true        # Auto-stop mismatched CPU/GPU sessions before provisioning gpu_tier
+  notebook_drive_id: "1nMdqe46R9xRdNiQCki4UygfUVviibaRz"  # Google Drive ID of GPU-configured voice_studio_colab.ipynb
+  root_folder_name: "VoiceStudioColab"
+  local_mount_dir: ""                # Optional path if Google Drive is mounted locally or at /content/drive/MyDrive
+  client_secrets_path: ".colab_auth/client_secrets.json"
+  token_path: ".colab_auth/drive_token.json"
+  agent_url: ""
+  agent_token: ""
+  poll_interval_sec: 4.0
+  timeout_sec: 3600

@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-studio"
+version = "2.1.0"
+description = "General-Purpose Whisper ASR Transcription, Edge-TTS, Gawr Gura / Custom RVC v2 Vocal Synthesis, and 1080p@60fps Video Studio (Local & Google Colab Pro)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT (Code); Third-party models retain original non-commercial/educational licenses" }
+dependencies = [
+    "lxml>=6.0.0",
+    "pillow>=11.0.0",
+    "python-pptx>=1.0.0",
+    "pypdf>=5.0.0",
+    "PyYAML>=6.0.0",
+    "typing_extensions>=4.12.0",
+]
+
+[project.optional-dependencies]
+voice = [
+    "torch>=2.2.0",
+    "torchaudio>=2.2.0",
+    "edge-tts>=7.0.0",
+    "onnxruntime>=1.19.0",
+    "pythainlp>=5.0.0",
+    "nltk>=3.8.0",
+    "pandas>=2.2.0",
+    "scikit-learn>=1.5.0",
+    "sklearn-crfsuite>=0.5.0",
+    "regex>=2024.0.0",
+    "addict>=2.4.0",
+    "num2words>=0.5.13",
+    "phonemizer-fork>=3.3.0",
+    "espeakng-loader>=0.2.4",
+    "huggingface_hub>=0.24.0",
+    "faster-whisper>=1.1.0",
+    "transformers>=4.48.0",
+    "faiss-cpu>=1.8.0",
+    "librosa>=0.10.2",
+    "pyloudnorm>=0.1.1",
+    "soundfile>=0.12.1",
+    "scipy>=1.13.0",
+    "numpy>=1.26.0",
+    "soxr>=1.0.0",
+    "einops>=0.8.0",
+]
+colab = [
+    "google-auth>=2.30.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-api-python-client>=2.140.0",
+    "psutil>=6.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+voice-studio = "voice_studio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"voice_studio.content" = ["phonetic_vocab.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

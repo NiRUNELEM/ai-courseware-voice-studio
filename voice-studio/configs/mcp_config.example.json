@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "voice-studio": {
+      "command": "/path/to/ai-courseware-voice-studio/voice-studio/.venv/bin/python",
+      "args": [
+        "/path/to/ai-courseware-voice-studio/voice-studio/studio.py",
+        "mcp"
+      ]
+    },
+    "colab-mcp": {
+      "command": "/path/to/.venv-colab-mcp/bin/colab-mcp",
+      "args": [],
+      "timeout": 30000
+    }
+  }
+}

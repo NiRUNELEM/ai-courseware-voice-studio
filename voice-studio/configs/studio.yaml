@@ -1,0 +1,114 @@
+# Unified Voice & Media Studio Config (ONE file for all settings)
+# Run with default config : python studio.py run
+# Run with custom input   : python studio.py run --input path/to/file.json --voice gawr_gura
+# Transcribe audio/video  : python studio.py transcribe --input path/to/recording.mp4
+# Run on Google Colab     : python studio.py run --target colab_drive
+
+job:
+  id: ""                             # Auto-generated if empty
+  output_dir: "output"               # All generated outputs go to output/<job_id>/
+  resume: true
+  dry_run: false
+
+input:
+  path: "input/sample_neutral.json"  # Script (.json/.md/.txt) OR Audio/Video (.wav/.mp3/.mp4/.mkv/.webm)
+  slides_png_dir: ""                 # Optional slide/image folder (slide_01.png, ...)
+  pptx_path: ""                      # Optional .pptx for progressive reveal animations
+  timeline_json: ""                  # Optional explicit timeline JSON
+  reveal_manifest: ""                # Optional pre-extracted reveal manifest JSON
+  reveal_key: ""                     # Optional chapter/deck key inside reveal_manifest
+  slides: []                         # Optional subset e.g. [1, 2]; empty = all
+  title: ""                          # Optional job/player title
+  zero_latin_phonetic: false         # Set true to fail QA if unmapped Latin tokens remain
+
+# Ordered workflow steps for `studio.py run` (auto-includes `transcribe` when input is audio/video):
+#   transcribe -> prepare -> tts -> convert -> qa -> align -> render
+steps:
+  - prepare
+  - tts
+  - convert
+  - qa
+  - align
+  - render
+
+transcribe:
+  backend: "auto"                    # auto | faster_whisper | openai_whisper | transformers
+  model: "openai/whisper-small"      # HF repo ID or Whisper size (e.g. small, medium, large-v3-turbo)
+  language: "th"
+  chunk_length_s: 30
+  formats: ["txt", "srt", "json"]
+
+voice:
+  profile: "gawr_gura"               # "gawr_gura" (default RVC v2) | "direct_tts" (Stage 1 Edge-TTS only)
+  display_name: "Gawr Gura [RVC v2] [RMVPE] [Ov2Super] 275e"
+  license: "openrail"
+  license_scope: "internal_non_commercial_education"
+  tts_backend: "edge_tts"
+  tts_voice: "th-TH-PremwadeeNeural" # Any Microsoft Edge neural voice (e.g. th-TH-NiwatNeural, en-US-JennyNeural)
+  tts_rate: "-6%"
+  tts_pitch: "+0Hz"
+  pacing_sec: 0.30
+  text_mode: "bilingual"             # bilingual | phonetic_spaced (Royal Society Thai reading + pauses) | phonetic | raw
+  clause_spacing: true
+  rvc:
+    enabled: true
+    source_type: "huggingface"       # huggingface | local
+    repo_id: "KeroroK66/GawrGura"
+    zip_filename: "Gawr Gura - Weights.gg Model.zip"
+    pth_filename: "model.pth"
+    index_filename: "model.index"
+    subdir: "gawr_gura"
+    local_pth: ""                    # Optional explicit local .pth path (overrides HuggingFace)
+    local_index: ""                  # Optional explicit local .index path
+    pitch_shift: 2
+    f0_method: "rmvpe"
+    index_rate: 0.12
+    volume_envelope: 0.25
+    protect: 0.45
+    hop_length: 128
+    input_gate_threshold: 0.008
+    input_target_rms: 0.140
+    input_peak_ceiling: 0.78
+    output_peak_ceiling: 0.89
+
+output:
+  formats: ["wav", "mp3", "mp4"]     # Remove "mp4" to output audio-only WAV/MP3 without video render
+  prefix: "studio"                   # Prefix for master audio/video deliverables (or derived from job_id/title)
+  sample_rate: 40000
+  resampler_precision: 28
+  target_lufs: -18.0
+  lufs_tolerance: 1.5
+  min_snr_db: 28.0
+  duration_tolerance: 1.0
+  declick: true
+  denoise: true
+  denoise_nf_db: -50
+  denoise_nr_db: 10
+  noise_gate: true
+  noise_gate_threshold: 0.007
+  inter_item_silence: 0.40
+  fps: 60
+
+phonetic_vocab_path: "src/voice_studio/content/phonetic_vocab.json"
+
+runtime:
+  target: "local"                    # local | colab_drive | colab_agent
+  voice_python: ""                   # Optional GPU Python interpreter (overrides VOICE_STUDIO_PYTHON)
+  rvc_assets_root: "models/rvc"
+  device: "cuda"
+  stage1_workers: 4
+  cpu_workers: 0                     # 0 = auto
+  video_workers: 0                   # 0 = auto
+
+colab:
+  client_secrets_path: ".colab_auth/client_secrets.json"
+  token_path: ".colab_auth/token.json"
+  root_folder_name: "voice_studio_jobs"
+  local_mount_dir: ""
+  agent_url: ""
+  agent_token: ""
+  poll_interval_sec: 10.0
+  timeout_sec: 7200.0
+  request_timeout_sec: 30.0
+  notebook_path: "colab/voice_studio_colab.ipynb"
+  bundle_zip_path: "exports/voice_studio_colab_bundle.zip"

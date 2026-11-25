@@ -1,0 +1,34 @@
+# Python & Environments
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+
+# Model Weights & Large Media (Never commit third-party model weights)
+voice-studio/models/
+voice-studio/output/
+voice-studio/exports/
+voice-studio/cache/
+*.pth
+*.index
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+*.onnx
+*.mp4
+*.wav
+*.mp3
+*.flac
+!sample-project/examples/*.mp3
+!sample-project/examples/*.mp4
+
+# Node / Bun
+node_modules/
+.nuxt/
+.output/
+
+# OS
+.DS_Store
+Thumbs.db

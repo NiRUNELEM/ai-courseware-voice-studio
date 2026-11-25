@@ -1,0 +1,24 @@
+# Sample Project Narration + 1080p60 Video Job Config (Production-Grade Quality)
+job:
+  id: "sample_api_demo"
+  output_dir: "../voice-studio/output"
+  resume: true
+
+input:
+  path: "./sample_script.json"
+  slides_png_dir: "./slides"
+  extra_vocab_path: "./sample_phonetic_vocab.json"
+  title: "Sample Courseware: Modern Web API & Automated Testing"
+  zero_latin_phonetic: true
+
+voice:
+  # Options: direct_tts (Local CPU) | gawr_gura_hybrid (OmniVoice-Thai + Vocos + RVC v2) | custom RVC v2
+  profile: "gawr_gura_hybrid"
+  tts_backend: "omnivoice_thai"
+  text_mode: "phonetic_spaced"
+
+output:
+  dir: "../voice-studio/output"
+  prefix: "sample_api_demo"
+  formats: ["wav", "mp3", "mp4"]
+  duration_tolerance: 0.25

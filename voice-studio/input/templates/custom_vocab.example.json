@@ -1,0 +1,12 @@
+{
+  "exact_compounds": [
+    ["my-service-v2", "มาย เซอร์วิส วีสอง"]
+  ],
+  "phrases": [
+    ["Cloud Database", "คลาวด์ ดาต้าเบส"]
+  ],
+  "words": {
+    "Acme": "แอกมี",
+    "Database": "ดาต้าเบส"
+  }
+}
