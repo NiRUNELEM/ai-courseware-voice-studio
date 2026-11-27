@@ -475,9 +475,9 @@ def convert_stage1_to_rvc_batch(
                 raise
             fut = master_pool.submit(_stage3_master_and_cleanup, raw_wav, s1_wav, out_wav, rvc_cfg, True)
             master_futs.append((out_wav, fut))
-        for out_wav, fut in master_futs:
-            durations[out_wav] = fut.result()
             completed += 1
             if on_progress:
                 on_progress(completed, total)
+        for out_wav, fut in master_futs:
+            durations[out_wav] = fut.result()
     return durations

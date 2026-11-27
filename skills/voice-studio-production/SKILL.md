@@ -55,6 +55,7 @@ Skill ชุดเดียวรวมครบตั้งแต่การ�
 - **จังหวะหายใจ (Royal Society -> TTS):** ใช้ `. ` หลังคำลงท้าย (`ค่ะ.`, `นะคะ.`), `, ` คั่นอนุประโยคและคำทับศัพท์ที่เรียงติดกัน (`[เว้นจังหวะสั้น]`), และ `... ` สำหรับหยุดยาว (`[เว้นจังหวะยาว]`)
 - **วรรณยุกต์ภาษาพูด (ห้ามใช้รูปตัดวรรณยุกต์แบบทางการส่งเข้า TTS):** เติมวรรณยุกต์ให้ตรงเสียงพูดจริงใน `phonetic_vocab.json` เช่น `Ready -> เรดี้`, `Policy -> พอลิซี่`, `Cookie -> คุกกี้`, `Body -> บอดี้`, `Security -> ซีเคียวริตี้`, `Identity -> ไอเดนทิตี้`, `Proxy -> พร็อกซี่`, `Query -> คิวรี่`, `Family -> แฟมิลี่`, `Healthy -> เฮลตี้`, `Token -> โทเค็น`, `Duties -> ดิวตี้ส์` และเลี่ยงตัวสะกดซ้อน `-์ด`
 - **ตรวจก่อนเรนเดอร์:** รัน `studio.py input check <script>` (เชื่อม `extra_vocab_path` ทั้งในสคริปต์และ job YAML) และตรวจ Regex บนผลลัพธ์สุดท้าย (`tts_items` ใน `*_slides_phonetic.json`) ยืนยัน `LATIN == 0`, `DIGITS == 0`, และ `TONE_HITS == 0` ครบ 100% ก่อนส่งเข้า TTS ทุกครั้ง
+- **Zero Prompt-Echoing / Zero AI-Noise:** ห้ามนำคำสั่งหรือเมตาสเปกของผู้ใช้ (เช่น `1920x1080`, `สัดส่วน 16 ต่อ 9`, `Zero-Bug`, `Production-Grade`) ไปใส่ในบทพูด หน้าเปิดวิดีโอ สไลด์ หรือ OpenAPI spec และไม่ฝังซับไตเติลลงวิดีโอสาธิตเว็บเว้นแต่ผู้ใช้สั่งโดยตรง
 
 ---
 
@@ -71,5 +72,5 @@ Skill ชุดเดียวรวมครบตั้งแต่การ�
 
 ### มาตรฐานการประมวลผลและ QA Gates
 - **Gain-Staging & Broadcast Mastering:** Stage 1 -> Stage 1.5 (`Vocos` + Soft Comp `1.5:1` + Gentle Gate + Pre-Limiter `-3.5 dB`) -> Stage 2 (`RVC v2 FP32` + `smooth_voiced_f0`) -> Stage 3 (`-18.5 LUFS`, Peak `-1.8 dBFS`, `48 kHz / 24-bit PCM SoXR-33`)
-- **Video Pipe & Colab Hygiene:** ใช้ `pipe_fps = min(fps, 20)` คู่ `-r 60` สำหรับ NVENC, `DEFAULT_MAX_ZIP_BYTES >= 16 GiB`, และปิด Colab runtime ทันทีเมื่อจบงาน
-- **QA Gates:** ตรวจ 24-bit PCM ด้วย `soundfile` (`near95 == 0`, `peak <= -1.5 dBFS`), ตรวจวิดีโอด้วย `ffprobe` (`1920x1080`, `60fps`, `duration delta <= 0.25s`), ถอดเสียงตรวจคำด้วย Whisper ASR และรัน `studio.py verify`
+- **Video Pipe, Font Integrity & Colab Hygiene:** ใช้ `pipe_fps = min(fps, 20)` คู่ `-r 60` สำหรับ NVENC, `DEFAULT_MAX_ZIP_BYTES >= 16 GiB`, ตั้ง `disconnect_mismatched: false` เพื่อไม่กระทบเซสชันอื่น, ปิด Colab runtime ด้วย `colab stop -s <session>` ทันทีเมื่อจบงาน (หรือก่อนรันใหม่หลังยกเลิกงานเพื่อไม่ให้ Kernel ค้าง), หมายเหตุว่า `timeline_manifest.json` ใช้โครงสร้าง dict-keyed (`{"1": ...}`), และตรวจสอบฟอนต์ `.ttf` + เปิดดูเฟรม PNG จาก MP4 เพื่อยืนยันไม่มีกล่องสี่เหลี่ยม (`□`)
+- **QA Gates & Drive Sync Resilience:** ตรวจ 24-bit PCM ด้วย `soundfile` (`near95 == 0`, `peak <= -1.5 dBFS`), ตรวจวิดีโอด้วย `ffprobe` (`1920x1080`, `60fps`, `duration delta <= 0.25s`), ถอดเสียงตรวจคำด้วย Whisper ASR, รัน `studio.py verify` และเมื่อซิงก์หลายไฟล์ขึ้น Google Drive ให้เว้นจังหวะ `3–4s` พร้อม Auto-Retry เมื่อติด `403 RATE_LIMIT_EXCEEDED`

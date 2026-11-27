@@ -129,8 +129,8 @@ class ColabWorkerState:
 
     def exec_command(self, command: str, cwd: str = "", timeout_sec: float = 120.0) -> Dict[str, Any]:
         clean_cmd = (command or "").strip()
-        if not clean_cmd:
-            raise ValueError("Command must not be empty.")
+        if not clean_cmd or "\x00" in clean_cmd:
+            raise ValueError("Command must be non-empty and free of NUL bytes.")
         run_cwd = self.work_root
         if cwd:
             cand = (self.work_root / cwd).resolve()

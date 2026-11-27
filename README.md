@@ -46,7 +46,7 @@ ai-courseware-voice-studio/
 ├── docs/
 │   ├── PIPELINE_GUIDE_TH.md                      # คู่มือการใช้งานและการสั่งงาน AI
 │   └── pipeline_architecture_th.webp             # แผนผังกระบวนการทำงาน
-├── skills/                                       # AI Skills (รวมเหลือ 2 ชุด, เชื่อม Symlink ไปยัง .agents/skills/)
+├── skills/                                       # AI Skills (2 ชุดหลัก: voice-studio-production, yourin-autohealing-architect v3.0)
 │   ├── README.md
 │   ├── yourin-autohealing-architect/SKILL.md     # Execution, Auto-Healing & Verification
 │   └── voice-studio-production/SKILL.md          # CLI/MCP/Colab Bridges, Model Discovery, Local/Colab & Thai Prosody
@@ -139,7 +139,7 @@ res = studio.run(
 
 ### 5. การใช้งาน AI Skills และ MCP Server (16 Tools)
 
-- **AI Skills:** เปิด Repository นี้ใน AI Coding Agent ที่รองรับ `.agents/skills/` เพื่อโหลด Skill ทั้ง 2 ชุดใน [`skills/`](skills/README.md) (รองรับการค้นหาโมเดลเสียงจาก Hugging Face/GitHub, การถามเลือกโหมดสื่อสารครั้งแรก และเลือก Local หรือ Google Colab แยกขั้นสร้างเสียงและตัดต่อ)
+- **AI Skills:** นำเข้า Skill ทั้ง 2 ชุดจาก [`skills/`](skills/README.md) ไปยัง AI Coding Agent ของคุณ (รองรับ AGY 2.0 Model-Agnostic Orchestrator v3.0, การค้นหาโมเดลเสียงจาก Hugging Face/GitHub, การถามเลือกโหมดสื่อสารครั้งแรก และเลือก Local หรือ Google Colab แยกขั้นสร้างเสียงและตัดต่อ)
 - **MCP Server:** ตั้งค่าการเชื่อมต่อ Voice Studio MCP Server จากตัวอย่างใน [voice-studio/configs/mcp_config.example.json](voice-studio/configs/mcp_config.example.json) (`python voice-studio/studio.py mcp`) รองรับครบ **16 เครื่องมือ** ได้แก่ `studio_doctor`, `studio_voices`, `studio_models_verify`, `studio_prepare_preview`, `studio_transcribe`, `studio_run` (รองรับ `voice_overrides`, `output_overrides`, `slides`, `extra_vocab_path`), `studio_status`, `studio_config`, `studio_bundle`, `studio_colab_ping`, `studio_colab_logs`, `studio_colab_download`, `studio_colab_exec`, `studio_colab_stop`, `studio_auth_status`, และ `studio_auth_login`
 
 ---

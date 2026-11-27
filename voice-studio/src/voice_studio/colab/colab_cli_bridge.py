@@ -396,8 +396,8 @@ class ColabCliBridge:
     def exec_command(self, command: str, cwd: str = "", timeout_sec: float = 120.0) -> Dict[str, Any]:
         """Runs a single shell command inside the provisioned Colab VM via colab-cli."""
         clean_cmd = (command or "").strip()
-        if not clean_cmd:
-            raise ValueError("Command must not be empty.")
+        if not clean_cmd or "\x00" in clean_cmd:
+            raise ValueError("Command must be non-empty and free of NUL bytes.")
         self.ensure_runtime()
         t0 = time.monotonic()
         wrapped = (
